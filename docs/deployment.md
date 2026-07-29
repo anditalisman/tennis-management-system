@@ -6,13 +6,17 @@ queue/scheduler. Untuk setup lokal cepat, lihat `README.md`.
 
 ## 1. Checklist sebelum production
 
-Nilai default di `.env.example` (root dan `backend/.env.example`) ditujukan
-untuk development lokal dan **wajib diganti** sebelum rilis:
+Semua konfigurasi Laravel (`APP_*`, `DB_*`, `MAIL_*`, dst.) di-forward ke
+container `app`/`queue`/`scheduler` lewat `environment:` di
+`docker-compose.yml`, bersumber dari root `.env` — di Dokploy, isi tab
+**Environment Variables** aplikasi (bukan file di server). `backend/.env`
+tidak dipakai untuk deploy. Nilai default di `.env.example` ditujukan untuk
+development lokal dan **wajib diganti** sebelum rilis:
 
 | Variabel | Risiko jika dibiarkan | Tindakan |
 |---|---|---|
 | `APP_DEBUG` | `true` membocorkan stack trace, query, dan path server pada setiap error 500 ke klien | Set `false` di production |
-| `APP_KEY` | Kunci enkripsi sesi/cookie | Generate ulang: `php artisan key:generate --force` (jangan pakai kunci dev) |
+| `APP_KEY` | Kunci enkripsi sesi/cookie; tanpa ini Laravel gagal start (fail-fast) | Generate: `docker compose exec app php artisan key:generate --show`, tempel hasilnya ke `APP_KEY=` di root `.env` (atau Dokploy Environment Variables) — **bukan** `--force`, karena APP_KEY datang dari `environment:` container yang menang atas isi file `.env` di dalamnya |
 | `DB_PASSWORD`, `MYSQL_ROOT_PASSWORD` | Placeholder `change-me-...` | Ganti dengan secret kuat, simpan di secret manager — jangan commit |
 | `MINIO_ROOT_USER` / `MINIO_ROOT_PASSWORD` (atau kredensial S3 nyata) | Placeholder | Ganti; pertimbangkan S3 terkelola alih-alih MinIO self-hosted untuk production |
 | `PAYMENT_GATEWAY_WEBHOOK_SECRET` | Placeholder `change-me-webhook-secret` | Ganti dengan secret yang diberikan provider payment gateway sesungguhnya saat integrasi Sprint 9 lanjutan dipakai untuk provider nyata |

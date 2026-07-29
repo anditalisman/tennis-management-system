@@ -57,17 +57,23 @@ docs/       OpenAPI skeleton, panduan pengguna, checklist deployment
 
    ```bash
    cp .env.example .env
-   cp backend/.env.example backend/.env
    cp frontend/.env.example frontend/.env.local
    ```
 
-   Pastikan nilai `DB_*` di root `.env` sama persis dengan `backend/.env` —
-   keduanya dibaca oleh service yang berbeda (MySQL container vs Laravel).
+   Root `.env` adalah **satu-satunya** tempat konfigurasi backend perlu diisi
+   — semua variabel Laravel (`DB_*`, `APP_KEY`, `MAIL_*`, dst.) di-forward ke
+   container `app`/`queue`/`scheduler` langsung lewat `environment:` di
+   `docker-compose.yml`, jadi `backend/.env` **tidak** perlu dibuat untuk
+   menjalankan stack (isinya cuma referensi/dipakai kalau menjalankan
+   `artisan` di luar Docker). Generate `APP_KEY` setelah container `app`
+   jalan: `docker compose exec app php artisan key:generate --show`, lalu
+   tempel hasilnya ke `APP_KEY=` di root `.env` dan jalankan
+   `docker compose up -d app queue scheduler` lagi.
 
-2. Bila port default (`8090` untuk API, `3000` untuk frontend, `9010`/`9011`
-   untuk MinIO, `3307` untuk MySQL) bentrok dengan service lain di mesin Anda,
-   ubah `APP_PORT` / `FRONTEND_PORT` / `MINIO_API_PORT` / `MINIO_CONSOLE_PORT`
-   di root `.env` sebelum menjalankan compose.
+2. Port yang dipakai saat ini: `8090` (API), `6666` (frontend), `9010`/`9011`
+   (MinIO), `33017` (MySQL). Untuk mengganti, edit langsung baris `ports:`
+   di `docker-compose.yml` (statis `HOST:CONTAINER`, bukan lewat variabel
+   `.env`).
 
 3. Build dan jalankan seluruh stack:
 
@@ -85,7 +91,7 @@ docs/       OpenAPI skeleton, panduan pengguna, checklist deployment
 
 5. Akses:
 
-   - Situs publik & portal: http://localhost:3000
+   - Situs publik & portal: http://localhost:6666
    - API: http://localhost:8090/api/v1 (health check di `/up` [Laravel] dan `/health` [nginx])
    - MinIO console: http://localhost:9011
 
