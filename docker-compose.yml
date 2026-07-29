@@ -4,15 +4,23 @@ x-backend-image: &backend-image
   build:
     context: ./backend
   environment:
-    # Infra wiring fixed by this compose file's own topology (service names/
-    # ports) — forwarded explicitly so app/queue/scheduler work correctly
-    # even if backend/.env doesn't exist on the deploy host (it's gitignored,
-    # so a plain `git pull` deploy never creates it). Credentials below still
-    # reuse the same root .env values already used for the mysql/minio
-    # services, so there's one source of truth for them. App-identity/secret
-    # values (APP_KEY, mail, Sanctum domains, webhook secret, etc.) are
-    # intentionally NOT forwarded here — those still require a real
-    # backend/.env on the host per docs/deployment.md §1.
+    # Full Laravel config forwarded explicitly so app/queue/scheduler work
+    # correctly with zero reliance on a physical backend/.env file existing
+    # on the deploy host (it's gitignored, so a plain `git pull` deploy
+    # never creates one). Everything here is settable from Dokploy's
+    # Environment Variables tab (which populates the root .env used for
+    # this compose file's ${VAR} interpolation) — no server file editing
+    # needed. APP_KEY has no safe default: if unset, Laravel fails fast
+    # with "No application encryption key has been specified" instead of
+    # silently running insecurely — generate one with
+    # `php artisan key:generate --show` and set it in the root .env /
+    # Dokploy Environment before first production deploy.
+    APP_NAME: ${APP_NAME:-Zul Tennis Clinic Management System}
+    APP_ENV: ${APP_ENV:-local}
+    APP_KEY: ${APP_KEY:-}
+    APP_DEBUG: ${APP_DEBUG:-true}
+    APP_URL: ${APP_URL:-http://localhost:8090}
+    LOG_LEVEL: ${LOG_LEVEL:-debug}
     DB_CONNECTION: mysql
     DB_HOST: mysql
     DB_PORT: "3306"
@@ -30,8 +38,19 @@ x-backend-image: &backend-image
     AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-ztcms_minio}
     AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-change-me-minio-secret}
     AWS_BUCKET: ${MINIO_BUCKET:-ztcms-media}
+    AWS_URL: ${AWS_URL:-http://localhost:9010/ztcms-media}
     AWS_DEFAULT_REGION: us-east-1
     AWS_USE_PATH_STYLE_ENDPOINT: "true"
+    MAIL_MAILER: ${MAIL_MAILER:-log}
+    MAIL_HOST: ${MAIL_HOST:-127.0.0.1}
+    MAIL_PORT: ${MAIL_PORT:-2525}
+    MAIL_USERNAME: ${MAIL_USERNAME:-null}
+    MAIL_PASSWORD: ${MAIL_PASSWORD:-null}
+    MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-no-reply@zultennisclinic.test}
+    MAIL_FROM_NAME: ${APP_NAME:-Zul Tennis Clinic Management System}
+    SANCTUM_STATEFUL_DOMAINS: ${SANCTUM_STATEFUL_DOMAINS:-localhost:6666}
+    SPA_URL: ${SPA_URL:-http://localhost:6666}
+    PAYMENT_GATEWAY_WEBHOOK_SECRET: ${PAYMENT_GATEWAY_WEBHOOK_SECRET:-change-me-webhook-secret}
   volumes:
     - ./backend:/var/www/html
     - backend_vendor:/var/www/html/vendor
