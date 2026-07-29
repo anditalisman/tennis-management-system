@@ -28,6 +28,11 @@ export function MobileNav({ items }: { items: { href: string; label: string }[] 
                 </Link>
               </li>
             ))}
+            <li className="mt-1 border-t border-(--color-ink-900)/10 pt-3 sm:hidden">
+              <Link href="/login" onClick={() => setOpen(false)} className="hover:text-(--color-court-600)">
+                Masuk
+              </Link>
+            </li>
           </ul>
         </nav>
       )}
