@@ -48,7 +48,7 @@ peserta mereka sendiri (staf mengakses via portal admin).
 backend/    Laravel API
 frontend/   Next.js app (publik + portal)
 infra/      Konfigurasi Nginx
-docs/       OpenAPI skeleton (docs/openapi.yaml)
+docs/       OpenAPI skeleton, panduan pengguna, checklist deployment
 ```
 
 ## Menjalankan secara lokal
@@ -106,6 +106,12 @@ npm run build
 `.github/workflows/ci.yml` menjalankan lint + audit + migration (terhadap MySQL
 sungguhan) + test untuk backend, dan lint + audit + build untuk frontend, pada
 setiap push/PR ke `main`.
+
+## Panduan Pengguna
+
+`docs/panduan-pengguna.md` menjelaskan setiap menu dan alur kerja di situs
+publik dan portal (per peran: staf, pelatih, peserta, wali, keuangan) untuk
+pengguna sehari-hari.
 
 ## Dokumentasi API
 
