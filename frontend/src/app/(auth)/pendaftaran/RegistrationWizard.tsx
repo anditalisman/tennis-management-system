@@ -77,7 +77,7 @@ export function RegistrationWizard({ defaultBranchId }: { defaultBranchId?: numb
             </option>
           ))}
         </Select>
-        {ageCategory && !needsGuardian && (
+        {!needsGuardian && (
           <Input
             label="Buat kata sandi"
             name="password"

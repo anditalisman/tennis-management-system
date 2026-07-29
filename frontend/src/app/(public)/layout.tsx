@@ -26,7 +26,7 @@ export default function PublicLayout({
         <div className="relative mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <Link
             href="/"
-            className="font-display text-lg font-extrabold tracking-tight text-(--color-court-700)"
+            className="min-w-0 shrink truncate font-display text-lg font-extrabold tracking-tight text-(--color-court-700)"
           >
             Zul Tennis Clinic
           </Link>
@@ -37,7 +37,7 @@ export default function PublicLayout({
               </Link>
             ))}
           </nav>
-          <div className="flex items-center gap-3">
+          <div className="flex shrink-0 items-center gap-3">
             <Link
               href="/login"
               className="hidden text-sm font-semibold text-(--color-ink-700) hover:text-(--color-court-600) sm:inline"
