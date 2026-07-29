@@ -70,7 +70,7 @@ docs/       OpenAPI skeleton, panduan pengguna, checklist deployment
    tempel hasilnya ke `APP_KEY=` di root `.env` dan jalankan
    `docker compose up -d app queue scheduler` lagi.
 
-2. Port yang dipakai saat ini: `8090` (API), `6666` (frontend), `9010`/`9011`
+2. Port yang dipakai saat ini: `8090` (API), `8088` (frontend), `9010`/`9011`
    (MinIO), `33017` (MySQL). Untuk mengganti, edit langsung baris `ports:`
    di `docker-compose.yml` (statis `HOST:CONTAINER`, bukan lewat variabel
    `.env`).
@@ -91,7 +91,7 @@ docs/       OpenAPI skeleton, panduan pengguna, checklist deployment
 
 5. Akses:
 
-   - Situs publik & portal: http://localhost:6666
+   - Situs publik & portal: http://localhost:8088
    - API: http://localhost:8090/api/v1 (health check di `/up` [Laravel] dan `/health` [nginx])
    - MinIO console: http://localhost:9011
 
