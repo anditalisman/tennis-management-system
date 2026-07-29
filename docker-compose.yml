@@ -48,8 +48,8 @@ x-backend-image: &backend-image
     MAIL_PASSWORD: ${MAIL_PASSWORD:-null}
     MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-no-reply@zultennisclinic.test}
     MAIL_FROM_NAME: ${APP_NAME:-Zul Tennis Clinic Management System}
-    SANCTUM_STATEFUL_DOMAINS: ${SANCTUM_STATEFUL_DOMAINS:-localhost:6666}
-    SPA_URL: ${SPA_URL:-http://localhost:6666}
+    SANCTUM_STATEFUL_DOMAINS: ${SANCTUM_STATEFUL_DOMAINS:-localhost:8088}
+    SPA_URL: ${SPA_URL:-http://localhost:8088}
     PAYMENT_GATEWAY_WEBHOOK_SECRET: ${PAYMENT_GATEWAY_WEBHOOK_SECRET:-change-me-webhook-secret}
   volumes:
     - ./backend:/var/www/html
@@ -156,14 +156,14 @@ services:
       - frontend_next_cache:/app/.next
     environment:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8090/api/v1}
-      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:6666}
+      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:8088}
       # Server-side only (never sent to the browser): lets Next.js route
       # handlers reach the API over the docker network instead of round-
       # tripping through the host port. Keeps the Sanctum token off client JS
       # entirely — the browser only ever talks to same-origin /api/backend/*.
       API_INTERNAL_URL: ${API_INTERNAL_URL:-http://nginx/api/v1}
     ports:
-      - "6666:3000"
+      - "8088:3000"
     depends_on:
       - nginx
     networks: [ztcms]
