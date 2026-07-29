@@ -1,0 +1,79 @@
+@import "tailwindcss";
+
+:root {
+  /* Brand tokens — hijau tenis (court), kuning bola tenis (ball), putih, gelap aksen */
+  --color-court-50: #eefaf1;
+  --color-court-100: #d3f2dc;
+  --color-court-400: #2f9e57;
+  --color-court-500: #1f6b3d;
+  --color-court-600: #175a32;
+  --color-court-700: #123d24;
+  --color-court-900: #0b2417;
+
+  --color-ball-300: #e4f08a;
+  --color-ball-400: #d7e967;
+  --color-ball-500: #c9df3c;
+
+  --color-ink-900: #14201a;
+  --color-ink-700: #34433a;
+  --color-ink-500: #5b6b60;
+  --color-ink-300: #9aa79f;
+
+  --color-paper: #f4f6f0;
+  --color-paper-raised: #ffffff;
+
+  --color-good: #178a58;
+  --color-warn: #b3791e;
+  --color-crit: #b3452c;
+  --color-info: #3e6b8a;
+
+  --background: var(--color-paper);
+  --foreground: var(--color-ink-900);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-court-50: var(--color-court-50);
+  --color-court-100: var(--color-court-100);
+  --color-court-400: var(--color-court-400);
+  --color-court-500: var(--color-court-500);
+  --color-court-600: var(--color-court-600);
+  --color-court-700: var(--color-court-700);
+  --color-court-900: var(--color-court-900);
+
+  --color-ball-300: var(--color-ball-300);
+  --color-ball-400: var(--color-ball-400);
+  --color-ball-500: var(--color-ball-500);
+
+  --color-ink-900: var(--color-ink-900);
+  --color-ink-700: var(--color-ink-700);
+  --color-ink-500: var(--color-ink-500);
+  --color-ink-300: var(--color-ink-300);
+
+  --color-paper: var(--color-paper);
+  --color-paper-raised: var(--color-paper-raised);
+
+  --color-good: var(--color-good);
+  --color-warn: var(--color-warn);
+  --color-crit: var(--color-crit);
+  --color-info: var(--color-info);
+
+  --font-sans: var(--font-body);
+  --font-display: var(--font-display);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-paper: #101712;
+    --color-paper-raised: #161f19;
+    --background: var(--color-paper);
+    --foreground: #eef2ec;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}

@@ -1,0 +1,843 @@
+openapi: 3.0.3
+info:
+  title: Zul Tennis Clinic Management System API
+  description: >
+    REST API untuk ZTCMS. Basis path /api/v1. Autentikasi menggunakan
+    Laravel Sanctum (Bearer token). Skema ini dimulai dari modul Autentikasi
+    (Sprint 0) dan kini mencakup modul Branches, Users, Participants,
+    Guardians, Coaches, Courts, Programs, Classes, Schedules, Attendance,
+    Galleries, Dashboard, Packages, Invoices, Payments, Evaluations,
+    Notifications, Reports, Inventory, Vouchers, dan Growth (referral +
+    trial class) — menutup cakupan MVP (Tahap 2), Tahap 3 (Keuangan &amp;
+    Evaluasi) penuh, dan Tahap 4 (isolasi multi-cabang, inventaris, growth,
+    payment gateway webhook) per rencana sprint §13. Isolasi cabang aktif
+    otomatis untuk staf (administrator/finance/coach) begitu akun mereka
+    memiliki branch_id; akun tanpa branch_id tetap melihat lintas cabang
+    (super-admin/management selalu lintas cabang). Payment gateway webhook
+    memakai kontrak generik (belum terhubung ke provider nyata) dengan
+    verifikasi signature HMAC dan idempotency wajib. Sprint 10 (pengerasan)
+    menutup seluruh rencana sprint backend §13: security review internal
+    (perbaikan celah IDOR pada endpoint galeri), rate limiting tambahan
+    pada webhook &amp; validasi voucher, serta dokumentasi deployment/restore
+    di docs/deployment.md. Lihat dokumen rancangan Tahap 1 §11 untuk daftar
+    endpoint lengkap yang direncanakan. Endpoint dari Sprint 2 dan
+    seterusnya didokumentasikan ringkas (path + ringkasan); lihat kode
+    controller/test terkait untuk detail request/response penuh. Frontend
+    (situs publik + portal) belum dibangun — backend API ini siap dipakai
+    sebagai kontrak untuk implementasi frontend berikutnya.
+  version: "1.2.0"
+  contact:
+    name: Zul Tennis Clinic
+externalDocs:
+  description: Rancangan Tahap 1 (arsitektur, ERD, backlog)
+  url: ../docs/
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local (docker-compose)
+
+tags:
+  - name: Auth
+    description: Registrasi, login, logout, dan profil pengguna.
+  - name: Branches
+    description: Manajemen cabang (multi-branch). Lihat = branches.view, kelola = branches.manage.
+  - name: Users
+    description: Manajemen akun staf/pengguna oleh admin (izin users.manage, hanya super-admin).
+  - name: Participants
+    description: Pendaftaran &amp; verifikasi peserta, kontak darurat, dan catatan cedera (data sensitif).
+  - name: Guardians
+    description: Wali dan hubungan ke peserta (anak) yang mereka pantau.
+  - name: Coaches
+    description: Profil pelatih (izin coaches.view/coaches.manage, plus self-service).
+  - name: Courts
+    description: Lapangan per cabang (izin courts-inventory.view/courts-inventory.manage).
+  - name: Programs
+    description: Program latihan (izin programs-schedules.view/programs-schedules.manage).
+  - name: Classes
+    description: Kelas, kuota, keanggotaan &amp; waiting list dalam sebuah program.
+  - name: Schedules
+    description: Jadwal sesi latihan dengan deteksi konflik lapangan/pelatih.
+  - name: Attendance
+    description: Check-in peserta, verifikasi absensi oleh pelatih, dan absensi pelatih.
+  - name: Galleries
+    description: Dokumentasi sesi latihan — privat by default, publikasi butuh moderasi admin.
+  - name: Dashboard
+    description: Ringkasan operasional dasar per peran.
+  - name: Packages
+    description: Paket latihan (izin packages.view/packages.manage).
+  - name: Invoices
+    description: Penagihan peserta.
+  - name: Payments
+    description: Bukti bayar manual dengan idempotency key, verifikasi oleh keuangan, dan kwitansi.
+  - name: Evaluations
+    description: Evaluasi perkembangan peserta oleh pelatih (11 aspek teknik/non-teknik).
+  - name: Notifications
+    description: Notifikasi in-app milik user login. Pengiriman email nyata (mailer=log di dev); WhatsApp/Telegram masih stub menunggu kredensial provider.
+  - name: Reports
+    description: Laporan kehadiran &amp; pendapatan dengan ekspor CSV (xlsx/pdf menyusul).
+  - name: Inventory
+    description: Inventaris per cabang (raket, bola, seragam, dll) — satu grup izin dengan Courts.
+  - name: Vouchers
+    description: Kode diskon untuk invoice (fixed/percentage), dengan batas pemakaian.
+  - name: Growth
+    description: Referral peserta dan trial class — fitur akuisisi Tahap 4.
+  - name: Announcements
+    description: Pengumuman bertarget (semua/cabang/peran) dengan jendela publish/expire.
+
+paths:
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Registrasi akun baru (peserta/wali)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, password, password_confirmation]
+              properties:
+                name: { type: string, example: "Budi Santoso" }
+                email: { type: string, format: email }
+                phone: { type: string, nullable: true, example: "+6281200000000" }
+                password: { type: string, format: password, minLength: 8 }
+                password_confirmation: { type: string, format: password }
+      responses:
+        "201":
+          description: Akun berhasil dibuat, token diterbitkan.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Login dan menerbitkan token akses
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string, format: password }
+                device_name: { type: string, nullable: true }
+      responses:
+        "200":
+          description: Login berhasil.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "422":
+          description: Kredensial salah atau akun tidak aktif.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationErrorBody"
+      security: []
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Mencabut token akses yang sedang dipakai
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Berhasil keluar.
+
+  /me:
+    get:
+      tags: [Auth]
+      summary: Profil pengguna yang sedang login
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Data pengguna.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/User"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+
+  /public/branches:
+    get:
+      tags: [Public]
+      summary: Daftar cabang aktif (tanpa autentikasi) — situs publik & form pendaftaran
+  /public/programs:
+    get:
+      tags: [Public]
+      summary: Daftar program aktif (tanpa autentikasi)
+  /public/packages:
+    get:
+      tags: [Public]
+      summary: Daftar paket aktif beserta nama program (tanpa autentikasi)
+  /public/coaches:
+    get:
+      tags: [Public]
+      summary: Daftar pelatih aktif, tanpa data kontak (tanpa autentikasi)
+  /public/courts:
+    get:
+      tags: [Public]
+      summary: Daftar lapangan aktif beserta info cabang (tanpa autentikasi)
+  /public/schedules:
+    get:
+      tags: [Public]
+      summary: Sesi terjadwal dalam N hari ke depan (parameter days, default 14, maks 30)
+  /public/galleries:
+    get:
+      tags: [Public]
+      summary: Galeri publik yang sudah disetujui moderator (tanpa autentikasi)
+
+  /branches:
+    get:
+      tags: [Branches]
+      summary: Daftar cabang (perlu izin branches.view)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: status
+          in: query
+          schema: { type: string, enum: [active, inactive] }
+        - name: search
+          in: query
+          schema: { type: string }
+        - name: per_page
+          in: query
+          schema: { type: integer, default: 15 }
+      responses:
+        "200":
+          description: Daftar cabang dengan pagination.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/Branch" }
+                  meta: { $ref: "#/components/schemas/PaginationMeta" }
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      tags: [Branches]
+      summary: Buat cabang baru (perlu izin branches.manage)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string, example: "Zul Tennis Clinic Bandung" }
+                slug: { type: string, nullable: true }
+                address: { type: string, nullable: true }
+                phone: { type: string, nullable: true }
+                geo_lat: { type: number, format: double, nullable: true }
+                geo_lng: { type: number, format: double, nullable: true }
+                status: { type: string, enum: [active, inactive] }
+      responses:
+        "201":
+          description: Cabang berhasil dibuat.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/Branch" }
+        "422":
+          $ref: "#/components/responses/ValidationError"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /branches/{branch}:
+    get:
+      tags: [Branches]
+      summary: Detail cabang (perlu izin branches.view)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: branch
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Detail cabang.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/Branch" }
+        "404":
+          description: Cabang tidak ditemukan.
+    put:
+      tags: [Branches]
+      summary: Perbarui cabang (perlu izin branches.manage)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: branch
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                slug: { type: string }
+                address: { type: string, nullable: true }
+                phone: { type: string, nullable: true }
+                geo_lat: { type: number, format: double, nullable: true }
+                geo_lng: { type: number, format: double, nullable: true }
+                status: { type: string, enum: [active, inactive] }
+      responses:
+        "200":
+          description: Cabang berhasil diperbarui.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/Branch" }
+        "422":
+          $ref: "#/components/responses/ValidationError"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    delete:
+      tags: [Branches]
+      summary: Hapus (soft delete) cabang (perlu izin branches.manage)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: branch
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Cabang berhasil dihapus.
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /users:
+    get:
+      tags: [Users]
+      summary: Daftar pengguna (perlu izin users.manage)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: status
+          in: query
+          schema: { type: string, enum: [active, suspended, inactive] }
+        - name: branch_id
+          in: query
+          schema: { type: integer }
+        - name: role
+          in: query
+          schema: { type: string, example: coach }
+        - name: search
+          in: query
+          schema: { type: string }
+        - name: per_page
+          in: query
+          schema: { type: integer, default: 15 }
+      responses:
+        "200":
+          description: Daftar pengguna dengan pagination.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/User" }
+                  meta: { $ref: "#/components/schemas/PaginationMeta" }
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      tags: [Users]
+      summary: Buat akun pengguna baru (perlu izin users.manage)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, password, roles]
+              properties:
+                name: { type: string }
+                email: { type: string, format: email }
+                phone: { type: string, nullable: true }
+                password: { type: string, format: password, minLength: 8 }
+                branch_id: { type: integer, nullable: true }
+                status: { type: string, enum: [active, suspended, inactive] }
+                roles:
+                  type: array
+                  items: { type: string }
+                  example: ["coach"]
+      responses:
+        "201":
+          description: Pengguna berhasil dibuat.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/User" }
+        "422":
+          $ref: "#/components/responses/ValidationError"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /users/{user}:
+    get:
+      tags: [Users]
+      summary: Detail pengguna (perlu izin users.manage)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: user
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Detail pengguna.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/User" }
+        "404":
+          description: Pengguna tidak ditemukan.
+    put:
+      tags: [Users]
+      summary: Perbarui pengguna, termasuk peran dan status (perlu izin users.manage)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: user
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                email: { type: string, format: email }
+                phone: { type: string, nullable: true }
+                password: { type: string, format: password, minLength: 8 }
+                branch_id: { type: integer, nullable: true }
+                status: { type: string, enum: [active, suspended, inactive] }
+                roles:
+                  type: array
+                  items: { type: string }
+      responses:
+        "200":
+          description: Pengguna berhasil diperbarui.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/User" }
+        "422":
+          $ref: "#/components/responses/ValidationError"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    delete:
+      tags: [Users]
+      summary: Nonaktifkan (soft delete) pengguna dan cabut semua token (perlu izin users.manage)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: user
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Pengguna berhasil dinonaktifkan.
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  # ---------------------------------------------------------------------
+  # Sprint 2+: documented compactly (path + summary). Auth = bearerAuth
+  # unless noted; see controllers/tests for full request/response shape.
+  # ---------------------------------------------------------------------
+  /participants:
+    post:
+      tags: [Participants]
+      summary: Daftar peserta baru — publik (dengan data wali) atau self-registration dewasa (terautentikasi)
+      security: []
+    get:
+      tags: [Participants]
+      summary: Daftar peserta — visibilitas sesuai peran (staf = semua, peserta/wali = milik sendiri)
+  /participants/{participant}:
+    get:
+      tags: [Participants]
+      summary: Detail peserta (uuid)
+    patch:
+      tags: [Participants]
+      summary: Perbarui data peserta
+  /participants/{participant}/verify:
+    post:
+      tags: [Participants]
+      summary: Verifikasi (approve/reject) pendaftaran — administrator/super-admin
+  /participants/{participant}/guardians:
+    post:
+      tags: [Guardians]
+      summary: Tautkan wali yang sudah punya akun ke peserta — admin
+  /participants/{participant}/emergency-contacts:
+    get:
+      tags: [Participants]
+      summary: Daftar kontak darurat peserta
+    post:
+      tags: [Participants]
+      summary: Tambah kontak darurat
+  /participants/{participant}/emergency-contacts/{emergencyContact}:
+    delete:
+      tags: [Participants]
+      summary: Hapus kontak darurat
+  /participants/{participant}/injuries:
+    get:
+      tags: [Participants]
+      summary: Riwayat cedera peserta (data sensitif)
+    post:
+      tags: [Participants]
+      summary: Catat cedera baru
+  /guardians/{guardian}/participants:
+    get:
+      tags: [Guardians]
+      summary: Daftar anak yang dipantau seorang wali — wali sendiri atau staf
+  /coaches:
+    get:
+      tags: [Coaches]
+      summary: Daftar pelatih (izin coaches.view/coaches.manage)
+    post:
+      tags: [Coaches]
+      summary: Buat akun + profil pelatih baru — super-admin/administrator
+  /coaches/{coach}:
+    get:
+      tags: [Coaches]
+      summary: Detail pelatih
+    put:
+      tags: [Coaches]
+      summary: Perbarui profil pelatih — staf atau pelatih ybs (self-service)
+    delete:
+      tags: [Coaches]
+      summary: Hapus profil pelatih — super-admin/administrator
+  /courts:
+    get:
+      tags: [Courts]
+      summary: Daftar lapangan (izin courts-inventory.view/courts-inventory.manage)
+    post:
+      tags: [Courts]
+      summary: Buat lapangan baru (izin courts-inventory.manage)
+  /courts/{court}:
+    get:
+      tags: [Courts]
+      summary: Detail lapangan
+    put:
+      tags: [Courts]
+      summary: Perbarui lapangan (izin courts-inventory.manage)
+    delete:
+      tags: [Courts]
+      summary: Hapus lapangan (izin courts-inventory.manage)
+
+  /programs:
+    get:
+      tags: [Programs]
+      summary: Daftar program (izin programs-schedules.view/programs-schedules.manage)
+    post:
+      tags: [Programs]
+      summary: Buat program baru (izin programs-schedules.manage)
+  /programs/{program}:
+    get: { tags: [Programs], summary: Detail program }
+    put: { tags: [Programs], summary: Perbarui program (izin programs-schedules.manage) }
+    delete: { tags: [Programs], summary: Hapus program (izin programs-schedules.manage) }
+  /classes:
+    get:
+      tags: [Classes]
+      summary: Daftar kelas + kuota tersisa (quota_remaining dihitung dari anggota aktif)
+    post:
+      tags: [Classes]
+      summary: Buat kelas baru (izin programs-schedules.manage)
+  /classes/{trainingClass}:
+    get: { tags: [Classes], summary: Detail kelas }
+    put: { tags: [Classes], summary: "Perbarui kelas — capacity_max tidak boleh diturunkan di bawah jumlah anggota aktif" }
+    delete: { tags: [Classes], summary: Hapus kelas }
+  /classes/{trainingClass}/members:
+    get: { tags: [Classes], summary: Daftar anggota aktif kelas }
+    post:
+      tags: [Classes]
+      summary: Daftarkan peserta ke kelas — otomatis masuk waiting list jika kuota penuh (transaksi + row lock, lihat §14)
+  /classes/{trainingClass}/waiting-list:
+    get: { tags: [Classes], summary: Daftar tunggu kelas (urut FIFO) }
+  /schedules:
+    get:
+      tags: [Schedules]
+      summary: "Kalender jadwal terfilter: ?from=&to=&coach_id=&court_id=&class_id=&status="
+    post:
+      tags: [Schedules]
+      summary: Buat jadwal baru — ditolak dengan pesan spesifik jika lapangan/pelatih bentrok (transaksi + row lock, lihat §14)
+  /schedules/{schedule}:
+    get: { tags: [Schedules], summary: Detail jadwal }
+  /schedules/{schedule}/cancel:
+    post: { tags: [Schedules], summary: Batalkan sesi + alasan (tidak mengurangi kuota paket) }
+  /schedules/{schedule}/reschedule:
+    post: { tags: [Schedules], summary: Buat jadwal pengganti — jadwal asal ditandai dibatalkan, riwayat tertaut via replaces_schedule_id }
+
+  /schedules/{schedule}/check-in:
+    post:
+      tags: [Attendance]
+      summary: "Check-in peserta (QR/manual) — peserta hanya bisa check-in untuk diri sendiri; staf/pelatih bisa atas nama peserta"
+  /schedules/{schedule}/attendance:
+    get: { tags: [Attendance], summary: "Daftar absensi sesi — visibilitas: staf semua, peserta/wali hanya milik sendiri" }
+    post:
+      tags: [Attendance]
+      summary: "Simpan/verifikasi absensi massal oleh pelatih pengampu (atau super-admin) — tiap perubahan status dicatat ke audit_logs"
+  /schedules/{schedule}/coach-attendance:
+    post: { tags: [Attendance], summary: Pelatih mencatat kehadiran diri untuk sesi yang ditugaskan (self-service) }
+  /schedules/{schedule}/coach-attendance/verify:
+    post: { tags: [Attendance], summary: Administrator memverifikasi absensi pelatih untuk perhitungan honor }
+  /participants/{participant}/attendance-stats:
+    get: { tags: [Attendance], summary: Rekap jumlah kehadiran per status untuk seorang peserta }
+
+  /galleries:
+    get:
+      tags: [Galleries]
+      summary: "Daftar galeri (?class_id=) — non-staf hanya melihat yang berstatus approved & visibility public"
+    post: { tags: [Galleries], summary: Buat entri galeri baru (privat/pending secara default) — pelatih pengampu kelas atau super-admin }
+  /galleries/{gallery}:
+    get: { tags: [Galleries], summary: Detail galeri beserta daftar media }
+    delete: { tags: [Galleries], summary: Hapus galeri (pengunggah, administrator, atau super-admin) — turut menghapus file di object storage }
+  /galleries/{gallery}/media:
+    post: { tags: [Galleries], summary: "Unggah multi-foto/video ke S3/MinIO (multipart, field files[])" }
+  /galleries/{gallery}/publish:
+    post: { tags: [Galleries], summary: Moderasi & publikasi (status=approved, visibility=public) — administrator/super-admin saja }
+
+  /dashboard:
+    get:
+      tags: [Dashboard]
+      summary: Ringkasan dasar sesuai peran (staf, pelatih, peserta, atau wali)
+
+  /packages:
+    get: { tags: [Packages], summary: Daftar paket latihan (izin packages.view/packages.manage) }
+    post: { tags: [Packages], summary: Buat paket baru (izin packages.manage) }
+  /packages/{package}:
+    get: { tags: [Packages], summary: Detail paket }
+    put: { tags: [Packages], summary: Perbarui paket (izin packages.manage) }
+    delete: { tags: [Packages], summary: Hapus paket (izin packages.manage) }
+  /participants/{participant}/packages:
+    get: { tags: [Packages], summary: "Daftar paket milik peserta (sessions_remaining, valid_until, status)" }
+
+  /invoices:
+    get:
+      tags: [Invoices]
+      summary: "Daftar tagihan — finance/admin/management melihat semua, peserta/wali hanya milik sendiri"
+    post:
+      tags: [Invoices]
+      summary: "Terbitkan invoice (item paket dan/atau item lain) — item paket otomatis membuat participant_package berstatus pending menunggu pembayaran (Sprint 6)"
+  /invoices/{invoice}:
+    get: { tags: [Invoices], summary: Detail invoice beserta item }
+
+  /invoices/{invoice}/payments:
+    post:
+      tags: [Payments]
+      summary: "Unggah bukti bayar — wajib header Idempotency-Key (replay dengan key sama mengembalikan payment yang sama, bukan duplikat); peserta/wali hanya untuk invoice miliknya"
+  /payments/{payment}/verify:
+    post:
+      tags: [Payments]
+      summary: "Verifikasi manual oleh petugas keuangan (approve/reject) — approve menandai invoice lunas/sebagian dan mengaktifkan participant_package terkait bila invoice lunas penuh"
+  /invoices/{invoice}/receipt:
+    get:
+      tags: [Payments]
+      summary: "Kwitansi (JSON) — tersedia setelah minimal satu pembayaran terverifikasi. Rendering PDF belum diimplementasikan (belum ada dependency PDF di composer.json)."
+
+  /evaluations:
+    post:
+      tags: [Evaluations]
+      summary: "Buat evaluasi + detail per aspek (maks 11 aspek teknik/non-teknik, skor 1-5) — pelatih (untuk diri sendiri) atau super-admin"
+  /evaluations/{evaluation}:
+    get: { tags: [Evaluations], summary: Detail evaluasi — staf, pelatih pembuat, atau peserta/wali terkait }
+  /participants/{participant}/evaluations:
+    get: { tags: [Evaluations], summary: Riwayat evaluasi peserta terurut terbaru dulu (dasar grafik perkembangan di frontend) }
+
+  /notifications:
+    get: { tags: [Notifications], summary: "Notifikasi milik user login (?unread_only=1), terurut terbaru dulu" }
+  /notifications/{notification}/read:
+    post: { tags: [Notifications], summary: Tandai satu notifikasi sebagai terbaca — hanya pemilik notifikasi }
+
+  /reports/attendance:
+    get:
+      tags: [Reports]
+      summary: "Rekap kehadiran per status & per kelas (?from=&to=&program_id=&class_id=) — pelatih otomatis dibatasi ke kelas yang diampu"
+  /reports/revenue:
+    get:
+      tags: [Reports]
+      summary: "Pendapatan terverifikasi per periode (bulan) & cabang (?from=&to=&branch_id=)"
+  /reports/{type}/export:
+    get:
+      tags: [Reports]
+      summary: "Ekspor laporan (type=attendance|revenue). format=csv berfungsi penuh; format=xlsx/pdf mengembalikan 422 jelas (dependency belum terpasang)"
+
+  /inventory-items:
+    get:
+      tags: [Inventory]
+      summary: "Daftar barang inventaris (izin courts-inventory.view/manage) — otomatis dibatasi ke cabang staf jika branch_id akun terisi"
+    post: { tags: [Inventory], summary: Tambah barang baru (izin courts-inventory.manage) }
+  /inventory-items/{inventoryItem}:
+    get: { tags: [Inventory], summary: Detail barang }
+    put: { tags: [Inventory], summary: Perbarui nama/kategori/kondisi barang }
+    delete: { tags: [Inventory], summary: Hapus barang }
+  /inventory-items/{inventoryItem}/transactions:
+    get: { tags: [Inventory], summary: Riwayat transaksi (in/out/borrow/return/damage/loss) untuk satu barang }
+    post:
+      tags: [Inventory]
+      summary: "Catat transaksi stok — borrow/out/damage/loss mengurangi stock_qty, in/return menambah; ditolak jika stok tidak mencukupi (row lock, lihat §14)"
+
+  /vouchers:
+    get: { tags: [Vouchers], summary: Daftar voucher (izin vouchers-refunds.view/manage) }
+    post: { tags: [Vouchers], summary: Buat voucher baru (izin vouchers-refunds.manage — super-admin/finance) }
+  /vouchers/validate:
+    post: { tags: [Vouchers], summary: "Validasi kode & hitung diskon saat checkout ({code, subtotal}) — semua user login" }
+
+  /participants/{participant}/referral-code:
+    post: { tags: [Growth], summary: Terbitkan kode referral baru untuk peserta ini }
+  /participants/{participant}/referrals:
+    get: { tags: [Growth], summary: Daftar referral yang dibuat peserta ini beserta status reward }
+  /classes/{trainingClass}/trial:
+    post: { tags: [Growth], summary: Daftarkan peserta untuk trial class (izin programs-schedules.manage) }
+  /trial-classes/{trialClass}/convert:
+    post: { tags: [Growth], summary: "Konversi trial menjadi anggota tetap — memakai alur enroll yang sama (waiting list jika penuh)" }
+  /classes/{trainingClass}/members/{participant}:
+    delete:
+      tags: [Classes]
+      summary: "Keluarkan peserta dari kelas — otomatis mempromosikan antrean waiting list FIFO berikutnya jika kuota tersedia (PB-16)"
+
+  /webhooks/payment-gateway:
+    post:
+      tags: [Payments]
+      summary: "Webhook payment gateway generik (belum terhubung ke provider nyata) — signature HMAC-SHA256 wajib via header X-Signature, idempotent per reference, seluruh payload masuk dicatat ke payment_gateway_logs walau signature tidak valid"
+      security: []
+
+  /announcements:
+    get: { tags: [Announcements], summary: "Daftar pengumuman — visibilitas per target_type/publish_at/expire_at (izin announcements.view/manage; coach & finance tidak termasuk)" }
+    post: { tags: [Announcements], summary: Buat pengumuman (izin announcements.manage — super-admin/administrator) }
+  /announcements/{announcement}:
+    get: { tags: [Announcements], summary: Detail pengumuman (tunduk pada visibilitas target yang sama) }
+    put: { tags: [Announcements], summary: Perbarui pengumuman }
+    delete: { tags: [Announcements], summary: Hapus pengumuman }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: "Sanctum Personal Access Token"
+
+  responses:
+    ValidationError:
+      description: Input tidak valid.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ValidationErrorBody"
+    Unauthenticated:
+      description: Token tidak valid atau tidak disertakan.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message: { type: string, example: "Unauthenticated." }
+    Forbidden:
+      description: Pengguna tidak memiliki izin yang diperlukan.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message: { type: string, example: "Anda tidak memiliki izin untuk mengakses sumber daya ini." }
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        email: { type: string, format: email }
+        phone: { type: string, nullable: true }
+        status: { type: string, enum: [active, suspended, inactive] }
+        locale: { type: string, example: id }
+        branch_id: { type: integer, nullable: true }
+        roles:
+          type: array
+          items: { type: string }
+          example: ["participant"]
+        last_login_at: { type: string, format: date-time, nullable: true }
+        created_at: { type: string, format: date-time }
+
+    AuthResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            user:
+              $ref: "#/components/schemas/User"
+            token:
+              type: string
+              description: "Sertakan sebagai header `Authorization: Bearer <token>` pada request berikutnya."
+
+    ValidationErrorBody:
+      type: object
+      properties:
+        message: { type: string }
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items: { type: string }
+
+    Branch:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        slug: { type: string }
+        address: { type: string, nullable: true }
+        phone: { type: string, nullable: true }
+        geo_lat: { type: number, format: double, nullable: true }
+        geo_lng: { type: number, format: double, nullable: true }
+        status: { type: string, enum: [active, inactive] }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    PaginationMeta:
+      type: object
+      properties:
+        current_page: { type: integer }
+        last_page: { type: integer }
+        per_page: { type: integer }
+        total: { type: integer }
+
+security:
+  - bearerAuth: []
