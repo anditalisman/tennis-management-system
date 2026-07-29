@@ -6,6 +6,8 @@ x-backend-image: &backend-image
   volumes:
     - ./backend:/var/www/html
     - backend_vendor:/var/www/html/vendor
+    - backend_storage:/var/www/html/storage
+    - backend_bootstrap_cache:/var/www/html/bootstrap/cache
   networks: [ztcms]
   depends_on:
     mysql:
@@ -25,7 +27,7 @@ services:
   nginx:
     image: nginx:1.27-alpine
     ports:
-      - "8090"
+      - "8090:80"
     volumes:
       - ./backend:/var/www/html:ro
       - ./infra/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
@@ -59,7 +61,7 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
     ports:
-      - "33017"
+      - "33017:3306"
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${DB_ROOT_PASSWORD:-root}"]
       interval: 10s
@@ -113,7 +115,7 @@ services:
       # entirely — the browser only ever talks to same-origin /api/backend/*.
       API_INTERNAL_URL: ${API_INTERNAL_URL:-http://nginx/api/v1}
     ports:
-      - "6666"
+      - "6666:3000"
     depends_on:
       - nginx
     networks: [ztcms]
@@ -127,5 +129,7 @@ volumes:
   redis_data:
   minio_data:
   backend_vendor:
+  backend_storage:
+  backend_bootstrap_cache:
   frontend_node_modules:
   frontend_next_cache:
