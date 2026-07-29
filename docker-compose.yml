@@ -3,6 +3,35 @@ name: ztcms
 x-backend-image: &backend-image
   build:
     context: ./backend
+  environment:
+    # Infra wiring fixed by this compose file's own topology (service names/
+    # ports) — forwarded explicitly so app/queue/scheduler work correctly
+    # even if backend/.env doesn't exist on the deploy host (it's gitignored,
+    # so a plain `git pull` deploy never creates it). Credentials below still
+    # reuse the same root .env values already used for the mysql/minio
+    # services, so there's one source of truth for them. App-identity/secret
+    # values (APP_KEY, mail, Sanctum domains, webhook secret, etc.) are
+    # intentionally NOT forwarded here — those still require a real
+    # backend/.env on the host per docs/deployment.md §1.
+    DB_CONNECTION: mysql
+    DB_HOST: mysql
+    DB_PORT: "3306"
+    DB_DATABASE: ${DB_DATABASE:-ztcms}
+    DB_USERNAME: ${DB_USERNAME:-ztcms}
+    DB_PASSWORD: ${DB_PASSWORD:-ztcms}
+    SESSION_DRIVER: redis
+    CACHE_STORE: redis
+    QUEUE_CONNECTION: redis
+    REDIS_HOST: redis
+    REDIS_PORT: "6379"
+    REDIS_PASSWORD: ${REDIS_PASSWORD:-null}
+    FILESYSTEM_DISK: s3
+    AWS_ENDPOINT: http://minio:9000
+    AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-ztcms_minio}
+    AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-change-me-minio-secret}
+    AWS_BUCKET: ${MINIO_BUCKET:-ztcms-media}
+    AWS_DEFAULT_REGION: us-east-1
+    AWS_USE_PATH_STYLE_ENDPOINT: "true"
   volumes:
     - ./backend:/var/www/html
     - backend_vendor:/var/www/html/vendor
