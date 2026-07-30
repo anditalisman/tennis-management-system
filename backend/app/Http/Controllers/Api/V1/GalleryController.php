@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Http\Controllers\Concerns\RestrictsParticipantAccess;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Gallery\StoreGalleryRequest;
 use App\Http\Requests\Gallery\UploadGalleryMediaRequest;
@@ -17,15 +18,21 @@ use Illuminate\Support\Facades\Storage;
 
 class GalleryController extends Controller
 {
+    use RestrictsParticipantAccess;
+
     public function index(Request $request): JsonResponse
     {
         $user = $request->user();
         $canModerate = $this->canModerate($user);
+        $isParticipantOrGuardian = $user->hasRole(Role::PARTICIPANT) || $user->hasRole(Role::GUARDIAN);
 
         $galleries = Gallery::query()
             ->with(['media', 'uploader'])
             ->when($request->string('class_id')->isNotEmpty(), fn ($query) => $query->where('class_id', $request->integer('class_id')))
             ->when(! $canModerate, fn ($query) => $query->where('status', Gallery::STATUS_APPROVED)->where('visibility', Gallery::VISIBILITY_PUBLIC))
+            // Participants/guardians only see galleries for classes they're
+            // actually enrolled in, not every published gallery site-wide.
+            ->when($isParticipantOrGuardian, fn ($query) => $query->whereIn('class_id', $this->enrolledClassIds($user)))
             ->orderByDesc('created_at')
             ->paginate($request->integer('per_page', 15));
 
@@ -59,6 +66,10 @@ class GalleryController extends Controller
     {
         $user = $request->user();
         $isVisible = $gallery->status === Gallery::STATUS_APPROVED && $gallery->visibility === Gallery::VISIBILITY_PUBLIC;
+
+        if ($user->hasRole(Role::PARTICIPANT) || $user->hasRole(Role::GUARDIAN)) {
+            $isVisible = $isVisible && in_array($gallery->class_id, $this->enrolledClassIds($user), true);
+        }
 
         abort_unless(
             $isVisible || $this->canModerate($user) || $user->id === $gallery->uploaded_by,

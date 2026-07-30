@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Http\Controllers\Concerns\RestrictsParticipantAccess;
 use App\Http\Controllers\Concerns\ScopesToBranch;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\TrainingClass\StoreTrainingClassRequest;
@@ -19,10 +20,12 @@ use Illuminate\Support\Facades\DB;
 
 class TrainingClassController extends Controller
 {
-    use ScopesToBranch;
+    use RestrictsParticipantAccess, ScopesToBranch;
 
     public function index(Request $request): JsonResponse
     {
+        $this->denyParticipantAndGuardian($request->user());
+
         $classes = $this->scopeToStaffBranch(TrainingClass::query(), $request->user())
             ->when($request->string('branch_id')->isNotEmpty(), fn ($query) => $query->where('branch_id', $request->integer('branch_id')))
             ->when($request->string('program_id')->isNotEmpty(), fn ($query) => $query->where('program_id', $request->integer('program_id')))
@@ -48,8 +51,10 @@ class TrainingClassController extends Controller
         return response()->json(['data' => new TrainingClassResource($class)], 201);
     }
 
-    public function show(TrainingClass $trainingClass): JsonResponse
+    public function show(Request $request, TrainingClass $trainingClass): JsonResponse
     {
+        $this->denyParticipantAndGuardian($request->user());
+
         return response()->json(['data' => new TrainingClassResource($trainingClass)]);
     }
 
@@ -99,8 +104,10 @@ class TrainingClassController extends Controller
         return response()->json(['data' => ['message' => 'Kelas berhasil dihapus.']]);
     }
 
-    public function members(TrainingClass $trainingClass): JsonResponse
+    public function members(Request $request, TrainingClass $trainingClass): JsonResponse
     {
+        $this->denyParticipantAndGuardian($request->user());
+
         $members = $trainingClass->members()->with('guardians.user', 'user')->get();
 
         return response()->json(['data' => ParticipantResource::collection($members)]);
@@ -201,8 +208,10 @@ class TrainingClassController extends Controller
         }
     }
 
-    public function waitingList(TrainingClass $trainingClass): JsonResponse
+    public function waitingList(Request $request, TrainingClass $trainingClass): JsonResponse
     {
+        $this->denyParticipantAndGuardian($request->user());
+
         $entries = $trainingClass->waitingList()->with('participant')->orderBy('created_at')->get();
 
         return response()->json([

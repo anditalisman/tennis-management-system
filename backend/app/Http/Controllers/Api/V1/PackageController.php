@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Http\Controllers\Concerns\RestrictsParticipantAccess;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Package\StorePackageRequest;
 use App\Http\Requests\Package\UpdatePackageRequest;
@@ -12,8 +13,12 @@ use Illuminate\Http\Request;
 
 class PackageController extends Controller
 {
+    use RestrictsParticipantAccess;
+
     public function index(Request $request): JsonResponse
     {
+        $this->denyParticipantAndGuardian($request->user());
+
         $packages = Package::query()
             ->when($request->string('program_id')->isNotEmpty(), fn ($query) => $query->where('program_id', $request->integer('program_id')))
             ->when($request->string('status')->isNotEmpty(), fn ($query) => $query->where('status', $request->string('status')))
@@ -38,8 +43,10 @@ class PackageController extends Controller
         return response()->json(['data' => new PackageResource($package)], 201);
     }
 
-    public function show(Package $package): JsonResponse
+    public function show(Request $request, Package $package): JsonResponse
     {
+        $this->denyParticipantAndGuardian($request->user());
+
         return response()->json(['data' => new PackageResource($package)]);
     }
 

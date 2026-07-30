@@ -2,8 +2,10 @@
 
 namespace Tests\Feature\Galleries;
 
+use App\Models\ClassMember;
 use App\Models\Coach;
 use App\Models\Gallery;
+use App\Models\Participant;
 use App\Models\Role;
 use App\Models\TrainingClass;
 use App\Models\User;
@@ -101,12 +103,44 @@ class GalleryModerationTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.status', Gallery::STATUS_APPROVED)
             ->assertJsonPath('data.visibility', Gallery::VISIBILITY_PUBLIC);
+    }
 
+    public function test_participant_enrolled_in_the_class_can_view_its_published_gallery(): void
+    {
+        $class = TrainingClass::factory()->create();
+        $gallery = Gallery::query()->create([
+            'class_id' => $class->id,
+            'uploaded_by' => $this->userWithRole(Role::COACH)->id,
+            'status' => Gallery::STATUS_APPROVED,
+            'visibility' => Gallery::VISIBILITY_PUBLIC,
+        ]);
+
+        $participantUser = $this->userWithRole(Role::PARTICIPANT);
+        $participant = Participant::factory()->create(['user_id' => $participantUser->id]);
+        ClassMember::query()->create([
+            'class_id' => $class->id,
+            'participant_id' => $participant->id,
+            'status' => ClassMember::STATUS_ACTIVE,
+            'joined_at' => now(),
+        ]);
+
+        $this->actingAs($participantUser, 'sanctum')->getJson('/api/v1/galleries')->assertOk()->assertJsonCount(1, 'data');
+        $this->actingAs($participantUser, 'sanctum')->getJson("/api/v1/galleries/{$gallery->id}")->assertOk();
+    }
+
+    public function test_participant_not_enrolled_in_the_class_cannot_view_its_published_gallery(): void
+    {
+        $class = TrainingClass::factory()->create();
+        $gallery = Gallery::query()->create([
+            'class_id' => $class->id,
+            'uploaded_by' => $this->userWithRole(Role::COACH)->id,
+            'status' => Gallery::STATUS_APPROVED,
+            'visibility' => Gallery::VISIBILITY_PUBLIC,
+        ]);
         $participant = $this->userWithRole(Role::PARTICIPANT);
-        $this->actingAs($participant, 'sanctum')
-            ->getJson('/api/v1/galleries')
-            ->assertOk()
-            ->assertJsonCount(1, 'data');
+
+        $this->actingAs($participant, 'sanctum')->getJson('/api/v1/galleries')->assertOk()->assertJsonCount(0, 'data');
+        $this->actingAs($participant, 'sanctum')->getJson("/api/v1/galleries/{$gallery->id}")->assertForbidden();
     }
 
     public function test_coach_cannot_publish_their_own_gallery(): void
@@ -154,7 +188,7 @@ class GalleryModerationTest extends TestCase
             ->assertOk();
     }
 
-    public function test_anyone_can_view_a_published_gallery_by_direct_id(): void
+    public function test_a_role_not_scoped_to_class_enrollment_can_view_a_published_gallery_by_direct_id(): void
     {
         $class = TrainingClass::factory()->create();
         $gallery = Gallery::query()->create([
@@ -163,9 +197,9 @@ class GalleryModerationTest extends TestCase
             'status' => Gallery::STATUS_APPROVED,
             'visibility' => Gallery::VISIBILITY_PUBLIC,
         ]);
-        $participant = $this->userWithRole(Role::PARTICIPANT);
+        $finance = $this->userWithRole(Role::FINANCE);
 
-        $this->actingAs($participant, 'sanctum')
+        $this->actingAs($finance, 'sanctum')
             ->getJson("/api/v1/galleries/{$gallery->id}")
             ->assertOk();
     }

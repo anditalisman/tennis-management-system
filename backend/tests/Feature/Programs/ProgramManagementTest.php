@@ -28,12 +28,12 @@ class ProgramManagementTest extends TestCase
         return $user;
     }
 
-    public function test_guardian_can_view_programs_but_not_manage(): void
+    public function test_guardian_cannot_view_or_manage_programs(): void
     {
         Program::factory()->count(2)->create();
         $guardian = $this->userWithRole(Role::GUARDIAN);
 
-        $this->actingAs($guardian, 'sanctum')->getJson('/api/v1/programs')->assertOk()->assertJsonCount(2, 'data');
+        $this->actingAs($guardian, 'sanctum')->getJson('/api/v1/programs')->assertForbidden();
         $this->actingAs($guardian, 'sanctum')->postJson('/api/v1/programs', ['name' => 'X'])->assertForbidden();
     }
 

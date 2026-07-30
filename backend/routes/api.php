@@ -223,6 +223,7 @@ Route::prefix('v1')->group(function () {
             Route::post('/evaluations', [EvaluationController::class, 'store']);
         });
         Route::middleware('permission:evaluations.view,evaluations.manage')->group(function () {
+            Route::get('/evaluations', [EvaluationController::class, 'index']);
             Route::get('/evaluations/{evaluation}', [EvaluationController::class, 'show']);
             Route::get('/participants/{participant:uuid}/evaluations', [EvaluationController::class, 'forParticipant']);
         });
