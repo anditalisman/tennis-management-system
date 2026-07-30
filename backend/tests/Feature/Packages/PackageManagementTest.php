@@ -29,12 +29,12 @@ class PackageManagementTest extends TestCase
         return $user;
     }
 
-    public function test_participant_can_view_packages_but_not_create(): void
+    public function test_participant_cannot_view_or_manage_packages(): void
     {
         Package::factory()->count(2)->create();
         $participant = $this->userWithRole(Role::PARTICIPANT);
 
-        $this->actingAs($participant, 'sanctum')->getJson('/api/v1/packages')->assertOk()->assertJsonCount(2, 'data');
+        $this->actingAs($participant, 'sanctum')->getJson('/api/v1/packages')->assertForbidden();
         $this->actingAs($participant, 'sanctum')->postJson('/api/v1/packages', ['name' => 'X'])->assertForbidden();
     }
 

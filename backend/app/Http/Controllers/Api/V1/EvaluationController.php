@@ -51,6 +51,24 @@ class EvaluationController extends Controller
         return response()->json(['data' => new EvaluationResource($evaluation->load('details', 'participant', 'coach.user'))], 201);
     }
 
+    public function index(Request $request): JsonResponse
+    {
+        $evaluations = $this->visibleEvaluations($request->user())
+            ->with('details', 'participant', 'coach.user')
+            ->orderByDesc('evaluation_date')
+            ->paginate($request->integer('per_page', 20));
+
+        return response()->json([
+            'data' => EvaluationResource::collection($evaluations->items()),
+            'meta' => [
+                'current_page' => $evaluations->currentPage(),
+                'last_page' => $evaluations->lastPage(),
+                'per_page' => $evaluations->perPage(),
+                'total' => $evaluations->total(),
+            ],
+        ]);
+    }
+
     public function show(Request $request, Evaluation $evaluation): JsonResponse
     {
         $this->authorizeView($request->user(), $evaluation);

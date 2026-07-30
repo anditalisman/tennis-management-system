@@ -27,8 +27,8 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { href: "/portal/peserta", label: "Peserta", roles: [...STAFF] },
       { href: "/portal/wali", label: "Wali & Anak", roles: [...STAFF] },
-      { href: "/portal/program", label: "Program", roles: [...STAFF, COACH, PARTICIPANT, GUARDIAN] },
-      { href: "/portal/kelas", label: "Kelas", roles: [...STAFF, COACH, PARTICIPANT, GUARDIAN] },
+      { href: "/portal/program", label: "Program", roles: [...STAFF, COACH] },
+      { href: "/portal/kelas", label: "Kelas", roles: [...STAFF, COACH] },
       { href: "/portal/jadwal", label: "Jadwal", roles: [...STAFF, COACH, PARTICIPANT, GUARDIAN] },
       { href: "/portal/absensi", label: "Absensi", roles: [...STAFF, COACH] },
       { href: "/portal/lapangan", label: "Lapangan", roles: [...STAFF, COACH] },
@@ -47,7 +47,7 @@ export const NAV_SECTIONS: NavSection[] = [
   {
     title: "Keuangan",
     items: [
-      { href: "/portal/paket", label: "Paket", roles: [...STAFF, FINANCE, PARTICIPANT, GUARDIAN] },
+      { href: "/portal/paket", label: "Paket", roles: [...STAFF, FINANCE] },
       { href: "/portal/tagihan", label: "Tagihan", roles: [...STAFF, FINANCE, PARTICIPANT, GUARDIAN] },
       { href: "/portal/voucher", label: "Voucher", roles: [SUPER_ADMIN, MANAGEMENT, FINANCE] },
       { href: "/portal/laporan", label: "Laporan", roles: [...STAFF, COACH, FINANCE] },

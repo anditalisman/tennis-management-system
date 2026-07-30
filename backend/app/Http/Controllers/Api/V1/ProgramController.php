@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Http\Controllers\Concerns\RestrictsParticipantAccess;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Program\StoreProgramRequest;
 use App\Http\Requests\Program\UpdateProgramRequest;
@@ -12,8 +13,12 @@ use Illuminate\Http\Request;
 
 class ProgramController extends Controller
 {
+    use RestrictsParticipantAccess;
+
     public function index(Request $request): JsonResponse
     {
+        $this->denyParticipantAndGuardian($request->user());
+
         $programs = Program::query()
             ->when($request->string('status')->isNotEmpty(), fn ($query) => $query->where('status', $request->string('status')))
             ->orderBy('name')
@@ -37,8 +42,10 @@ class ProgramController extends Controller
         return response()->json(['data' => new ProgramResource($program)], 201);
     }
 
-    public function show(Program $program): JsonResponse
+    public function show(Request $request, Program $program): JsonResponse
     {
+        $this->denyParticipantAndGuardian($request->user());
+
         return response()->json(['data' => new ProgramResource($program)]);
     }
 

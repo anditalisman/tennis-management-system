@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Http\Controllers\Concerns\RestrictsParticipantAccess;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\TrainingSchedule\CancelTrainingScheduleRequest;
 use App\Http\Requests\TrainingSchedule\RescheduleTrainingScheduleRequest;
@@ -15,9 +16,12 @@ use Illuminate\Support\Facades\DB;
 
 class TrainingScheduleController extends Controller
 {
+    use RestrictsParticipantAccess;
+
     public function index(Request $request): JsonResponse
     {
         $user = $request->user();
+        $isParticipantOrGuardian = $user->hasRole(Role::PARTICIPANT) || $user->hasRole(Role::GUARDIAN);
 
         $schedules = TrainingSchedule::query()
             // Schedules have no branch_id of their own — isolate via the court's
@@ -26,6 +30,9 @@ class TrainingScheduleController extends Controller
                 ! $user->hasRole(Role::SUPER_ADMIN) && ! $user->hasRole(Role::MANAGEMENT) && $user->branch_id,
                 fn ($query) => $query->whereHas('court', fn ($q) => $q->where('branch_id', $user->branch_id)),
             )
+            // Participants/guardians only ever see sessions for classes they're
+            // actually enrolled in, never the full site-wide calendar.
+            ->when($isParticipantOrGuardian, fn ($query) => $query->whereIn('class_id', $this->enrolledClassIds($user)))
             ->when($request->string('from')->isNotEmpty(), fn ($query) => $query->whereDate('session_date', '>=', $request->string('from')))
             ->when($request->string('to')->isNotEmpty(), fn ($query) => $query->whereDate('session_date', '<=', $request->string('to')))
             ->when($request->string('coach_id')->isNotEmpty(), fn ($query) => $query->where('coach_id', $request->integer('coach_id')))
@@ -73,8 +80,17 @@ class TrainingScheduleController extends Controller
         return response()->json(['data' => new TrainingScheduleResource($schedule)], 201);
     }
 
-    public function show(TrainingSchedule $schedule): JsonResponse
+    public function show(Request $request, TrainingSchedule $schedule): JsonResponse
     {
+        $user = $request->user();
+        if ($user->hasRole(Role::PARTICIPANT) || $user->hasRole(Role::GUARDIAN)) {
+            abort_unless(
+                in_array($schedule->class_id, $this->enrolledClassIds($user), true),
+                403,
+                'Anda tidak memiliki izin untuk mengakses jadwal ini.',
+            );
+        }
+
         return response()->json(['data' => new TrainingScheduleResource($schedule)]);
     }
 
