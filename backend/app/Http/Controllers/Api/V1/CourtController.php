@@ -8,6 +8,7 @@ use App\Http\Requests\Court\StoreCourtRequest;
 use App\Http\Requests\Court\UpdateCourtRequest;
 use App\Http\Resources\CourtResource;
 use App\Models\Court;
+use App\Models\Role;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -41,8 +42,18 @@ class CourtController extends Controller
         return response()->json(['data' => new CourtResource($court)], 201);
     }
 
-    public function show(Court $court): JsonResponse
+    public function show(Request $request, Court $court): JsonResponse
     {
+        $user = $request->user();
+        abort_unless(
+            $user->hasRole(Role::SUPER_ADMIN)
+                || $user->hasPermission('courts-inventory.view')
+                || $user->hasPermission('courts-inventory.manage')
+                || $user->hasAnyRole([Role::PARTICIPANT, Role::GUARDIAN]),
+            403,
+            'Anda tidak memiliki izin untuk melihat lapangan ini.',
+        );
+
         return response()->json(['data' => new CourtResource($court)]);
     }
 

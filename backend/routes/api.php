@@ -110,8 +110,13 @@ Route::prefix('v1')->group(function () {
 
         Route::middleware('permission:courts-inventory.view,courts-inventory.manage')->group(function () {
             Route::get('/courts', [CourtController::class, 'index']);
-            Route::get('/courts/{court}', [CourtController::class, 'show']);
         });
+        // Show (not index) is also reachable by participant/guardian — see
+        // CourtController::show()'s own authorization — so a schedule's
+        // court can be displayed to the participant checking in for it
+        // without handing them list access or the shared inventory-items
+        // permission this module's .view would otherwise unlock.
+        Route::get('/courts/{court}', [CourtController::class, 'show']);
         Route::middleware('permission:courts-inventory.manage')->group(function () {
             Route::post('/courts', [CourtController::class, 'store']);
             Route::put('/courts/{court}', [CourtController::class, 'update']);
