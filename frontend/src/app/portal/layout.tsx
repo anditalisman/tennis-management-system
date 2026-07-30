@@ -8,7 +8,7 @@ export default async function PortalLayout({ children }: Readonly<{ children: Re
   const sections = visibleNavSections(session.user.roles);
 
   return (
-    <div className="flex min-h-full bg-(--color-paper)">
+    <div className="flex min-h-full flex-col bg-(--color-paper) md:flex-row">
       <Sidebar sections={sections} />
       <div className="flex min-h-full flex-1 flex-col">
         <TopBar user={session.user} />

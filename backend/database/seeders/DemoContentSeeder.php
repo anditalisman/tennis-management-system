@@ -3,9 +3,11 @@
 namespace Database\Seeders;
 
 use App\Models\Branch;
+use App\Models\ClassMember;
 use App\Models\Coach;
 use App\Models\Court;
 use App\Models\Package;
+use App\Models\Participant;
 use App\Models\Program;
 use App\Models\TrainingClass;
 use App\Models\TrainingSchedule;
@@ -174,6 +176,25 @@ class DemoContentSeeder extends Seeder
                         ],
                     );
                 }
+            }
+        }
+
+        // Enroll DemoUserSeeder's demo participant/child as active members of a
+        // real class — without this, "Check-in Sekarang" and attendance
+        // verification always fail with "bukan anggota aktif kelas ini" since
+        // there'd be nothing for them to be checked into.
+        $demoClass = TrainingClass::query()->where('name', 'Junior Development (Remaja) — Kelas Reguler')->first();
+        $demoParticipants = Participant::query()
+            ->whereHas('user', fn ($q) => $q->where('email', 'peserta@zultennisclinic.test'))
+            ->orWhere('registration_no', 'PUSAT-DEMO-00001')
+            ->get();
+
+        if ($demoClass) {
+            foreach ($demoParticipants as $participant) {
+                ClassMember::query()->updateOrCreate(
+                    ['class_id' => $demoClass->id, 'participant_id' => $participant->id],
+                    ['status' => ClassMember::STATUS_ACTIVE, 'joined_at' => now()],
+                );
             }
         }
     }
