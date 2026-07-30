@@ -3,6 +3,9 @@
 namespace App\Console\Commands;
 
 use App\Models\Branch;
+use App\Models\Coach;
+use App\Models\Guardian;
+use App\Models\Participant;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Console\Command;
@@ -65,6 +68,31 @@ class CreateAdminCommand extends Command
         );
 
         $user->roles()->syncWithoutDetaching([$role->id]);
+
+        // Role alone only unlocks menus/permissions — several features key off
+        // a *profile* row instead (Coach for evaluations/gallery uploads,
+        // Participant for check-in/enrollment, Guardian for linked children).
+        // Without this, an account created here for one of these roles would
+        // pass every permission check and still fail at the first
+        // profile-dependent action (e.g. a coach unable to submit an
+        // evaluation because $user->coach is null).
+        match ($role->slug) {
+            Role::COACH => Coach::query()->updateOrCreate(
+                ['user_id' => $user->id],
+                ['branch_id' => $user->branch_id, 'employment_status' => Coach::STATUS_ACTIVE],
+            ),
+            Role::PARTICIPANT => Participant::query()->updateOrCreate(
+                ['user_id' => $user->id],
+                [
+                    'branch_id' => $user->branch_id,
+                    'full_name' => $user->name,
+                    'status' => Participant::STATUS_ACTIVE,
+                    'policy_accepted_at' => now(),
+                ],
+            ),
+            Role::GUARDIAN => Guardian::query()->updateOrCreate(['user_id' => $user->id], []),
+            default => null,
+        };
 
         $this->info("Akun '{$user->email}' siap dengan peran '{$role->slug}'.");
 

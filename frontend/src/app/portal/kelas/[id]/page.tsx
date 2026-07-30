@@ -12,6 +12,7 @@ import { formatDate } from "@/lib/format";
 import {
   bookTrialClassAction,
   convertTrialClassAction,
+  deleteClassAction,
   enrollParticipantAction,
   removeMemberAction,
 } from "@/lib/actions/classes";
@@ -85,6 +86,13 @@ export default async function KelasDetailPage({
             <Link href={`/portal/kelas/${id}/edit`} className="text-sm font-semibold text-(--color-court-600) hover:underline">
               Edit
             </Link>
+          )}
+          {staff && (
+            <form action={deleteClassAction.bind(null, classId)}>
+              <Button type="submit" variant="danger" size="sm">
+                Hapus Kelas
+              </Button>
+            </form>
           )}
         </div>
       </div>
