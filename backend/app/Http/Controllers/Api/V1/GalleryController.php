@@ -87,11 +87,11 @@ class GalleryController extends Controller
     public function uploadMedia(UploadGalleryMediaRequest $request, Gallery $gallery): JsonResponse
     {
         $user = $request->user();
-        abort_unless(
-            $user->id === $gallery->uploaded_by || $user->hasRole(Role::SUPER_ADMIN),
-            403,
-            'Anda tidak memiliki izin untuk menambah media ke galeri ini.',
-        );
+        // Same rule as creating the gallery in the first place (any coach
+        // teaching the class, or super-admin) — this used to only allow the
+        // original uploader, so a co-teaching coach or an admin adding more
+        // media to someone else's gallery always got a 403.
+        $this->authorizeUpload($user, $gallery->trainingClass);
 
         $directory = 'galleries/'.$gallery->id;
 
