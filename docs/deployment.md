@@ -36,6 +36,18 @@ docker compose exec app php artisan route:cache
 docker compose restart queue scheduler
 ```
 
+`DatabaseSeeder` sengaja **tidak** membuat akun demo saat `APP_ENV=production`
+(lihat `DatabaseSeeder::run()`) — database production yang baru bermigrasi
+tidak punya user sama sekali. Buat akun staf pertama dengan:
+
+```bash
+docker compose exec app php artisan app:create-admin \
+  --name="Nama Anda" --email="admin@domain.anda" --password="..." --role=super-admin
+```
+
+Aman dijalankan ulang (upsert berdasarkan email) — termasuk kalau database
+ter-reset di deploy berikutnya.
+
 `migrate --force` diperlukan karena `APP_ENV=production` menolak migrasi
 interaktif tanpa flag ini. Jalankan migrasi **sebelum** menukar traffic ke
 container baru pada deployment zero-downtime.
