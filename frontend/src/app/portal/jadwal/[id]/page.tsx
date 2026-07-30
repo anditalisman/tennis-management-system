@@ -119,7 +119,8 @@ export default async function JadwalDetailPage({
             {myAttendance ? (
               <>
                 <p className="text-sm text-(--color-ink-700)">
-                  Anda sudah check-in {myAttendance.check_in_at ? `pukul ${formatTime(myAttendance.check_in_at)}` : ""}, menunggu verifikasi pelatih.
+                  Anda sudah check-in{myAttendance.check_in_at ? ` pukul ${formatTime(myAttendance.check_in_at)}` : ""}
+                  {myAttendance.status === "pending" ? ", menunggu verifikasi pelatih." : "."}
                 </p>
                 <StatusBadge status={myAttendance.status} />
               </>
