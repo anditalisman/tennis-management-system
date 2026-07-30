@@ -42,6 +42,7 @@ class AttendanceController extends Controller
 
         $user = $request->user();
         $participantUuid = $request->validated('participant_id');
+        $isSelfCheckIn = ! $participantUuid;
 
         if ($participantUuid) {
             abort_unless(
@@ -60,14 +61,33 @@ class AttendanceController extends Controller
 
         $session = $schedule->session ?? TrainingSession::query()->create(['schedule_id' => $schedule->id]);
 
-        $attendance = Attendance::query()->updateOrCreate(
-            ['session_id' => $session->id, 'participant_id' => $participantId],
-            [
-                'method' => $request->validated('method') ?: Attendance::METHOD_MANUAL,
-                'check_in_at' => now(),
-                'status' => Attendance::STATUS_PENDING,
-            ],
-        );
+        // Self check-in no longer waits on the coach's "Verifikasi Absensi"
+        // pass — it's recorded as present immediately, and the coach can
+        // still correct it (late/absent/excused/...) afterwards through
+        // bulkVerify, which re-runs the same deduct-on-first-transition
+        // check below so this can't double-deduct a package session.
+        $attendance = DB::transaction(function () use ($session, $participantId, $request, $isSelfCheckIn) {
+            $existing = Attendance::query()->where('session_id', $session->id)->where('participant_id', $participantId)->first();
+            $oldStatus = $existing?->status;
+            $newStatus = $isSelfCheckIn ? Attendance::STATUS_PRESENT : Attendance::STATUS_PENDING;
+
+            $attendance = Attendance::query()->updateOrCreate(
+                ['session_id' => $session->id, 'participant_id' => $participantId],
+                [
+                    'method' => $request->validated('method') ?: Attendance::METHOD_MANUAL,
+                    'check_in_at' => now(),
+                    'status' => $newStatus,
+                ],
+            );
+
+            $wasDeducting = in_array($oldStatus, Attendance::DEDUCTING_STATUSES, true);
+            $nowDeducting = in_array($newStatus, Attendance::DEDUCTING_STATUSES, true);
+            if (! $wasDeducting && $nowDeducting) {
+                $this->deductPackageSession($participantId);
+            }
+
+            return $attendance;
+        });
 
         return response()->json(['data' => new AttendanceResource($attendance->load('participant'))], 201);
     }

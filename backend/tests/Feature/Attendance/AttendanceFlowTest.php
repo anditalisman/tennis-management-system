@@ -59,8 +59,10 @@ class AttendanceFlowTest extends TestCase
 
         $response = $this->actingAs($participantUser, 'sanctum')->postJson("/api/v1/schedules/{$schedule->id}/check-in", []);
 
-        $response->assertCreated()->assertJsonPath('data.status', Attendance::STATUS_PENDING);
-        $this->assertDatabaseHas('attendance', ['participant_id' => $participant->id, 'status' => Attendance::STATUS_PENDING]);
+        // Self check-in no longer waits on coach verification — it's
+        // recorded as present immediately (see AttendanceController::checkIn).
+        $response->assertCreated()->assertJsonPath('data.status', Attendance::STATUS_PRESENT);
+        $this->assertDatabaseHas('attendance', ['participant_id' => $participant->id, 'status' => Attendance::STATUS_PRESENT]);
     }
 
     public function test_participant_cannot_check_in_a_non_member(): void
@@ -86,9 +88,13 @@ class AttendanceFlowTest extends TestCase
 
     public function test_assigned_coach_can_bulk_verify_attendance_and_it_is_logged(): void
     {
-        ['coachUser' => $coachUser, 'schedule' => $schedule, 'participantUser' => $participantUser, 'participant' => $participant] = $this->enrolledSchedule();
-
-        $this->actingAs($participantUser, 'sanctum')->postJson("/api/v1/schedules/{$schedule->id}/check-in", []);
+        // Coach marking attendance for someone who didn't self check-in via
+        // the app (walk-in style) — this is a genuine pending -> present
+        // transition and should be audit-logged. (A self-checked-in
+        // participant is already "present" by the time the coach looks at
+        // it, so re-confirming that same status is a no-op, not something
+        // that needs its own log entry.)
+        ['coachUser' => $coachUser, 'schedule' => $schedule, 'participant' => $participant] = $this->enrolledSchedule();
 
         $response = $this->actingAs($coachUser, 'sanctum')->postJson("/api/v1/schedules/{$schedule->id}/attendance", [
             'records' => [
