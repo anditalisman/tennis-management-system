@@ -1,5 +1,5 @@
 import "server-only";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { SESSION_COOKIE_NAME } from "./constants";
 
 export type SessionUser = {
@@ -20,9 +20,18 @@ const MAX_AGE = 60 * 60 * 24 * 7; // 7 days — matches Sanctum tokens having no
 
 export async function createSession(session: Session): Promise<void> {
   const store = await cookies();
+  const hdrs = await headers();
+  // NODE_ENV is always "production" in the built image (local and deployed
+  // alike), so it can't tell us whether *this particular request* is over
+  // HTTPS. A `secure` cookie set while the browser is on plain HTTP (e.g.
+  // testing via http://localhost:8088) is silently dropped by the browser —
+  // login "succeeds" server-side but the session never actually sticks.
+  // x-forwarded-proto is set by the reverse proxy (Traefik/nginx) in front
+  // of real HTTPS deployments; absent locally, where HTTP is expected.
+  const secure = hdrs.get("x-forwarded-proto") === "https";
   store.set(COOKIE_NAME, JSON.stringify(session), {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure,
     sameSite: "lax",
     path: "/",
     maxAge: MAX_AGE,

@@ -88,23 +88,29 @@ class Participant extends Model
     {
         static::creating(function (Participant $participant) {
             $participant->uuid ??= (string) Str::uuid();
-            $participant->registration_no ??= static::generateRegistrationNo($participant->branch_id);
+            $participant->registration_no ??= static::generateRegistrationNo();
         });
     }
 
-    public static function generateRegistrationNo(?int $branchId): string
+    /**
+     * ZT-{tahun-bulan daftar}-{nomor urut, reset tiap bulan}, mis. ZT-202605-0001.
+     * Sengaja tidak memakai prefix cabang — sistem tampil sebagai satu lokasi
+     * ke pengguna meski data cabang masih ada di database untuk kebutuhan
+     * internal, jadi nomor pendaftaran tidak boleh membocorkannya. Dihitung
+     * global (bukan per cabang) karena `registration_no` unik di seluruh
+     * tabel, bukan per cabang.
+     */
+    public static function generateRegistrationNo(): string
     {
-        $branch = Branch::query()->find($branchId);
-        $prefix = $branch ? Str::upper(Str::slug($branch->slug, '')) : 'ZTC';
-        $year = now()->format('Y');
+        $period = now()->format('Ym');
 
         $sequence = static::query()
-            ->where('branch_id', $branchId)
-            ->whereYear('created_at', $year)
+            ->whereYear('created_at', now()->year)
+            ->whereMonth('created_at', now()->month)
             ->withTrashed()
             ->count() + 1;
 
-        return sprintf('%s-%s-%05d', $prefix, $year, $sequence);
+        return sprintf('ZT-%s-%04d', $period, $sequence);
     }
 
     public function canTransitionTo(string $status): bool
