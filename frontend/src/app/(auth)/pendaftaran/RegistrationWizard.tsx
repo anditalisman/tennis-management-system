@@ -66,6 +66,7 @@ export function RegistrationWizard({ defaultBranchId }: { defaultBranchId?: numb
           required
           value={ageCategory}
           onChange={(e) => setAgeCategory(e.target.value)}
+          onInput={(e) => setAgeCategory(e.currentTarget.value)}
           error={fieldErrors.age_category}
         >
           <option value="" disabled>
