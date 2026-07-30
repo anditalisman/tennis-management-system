@@ -9,62 +9,64 @@ x-backend-image: &backend-image
   <<: *dns
   build:
     context: ./backend
+
   environment:
     TZ: ${TZ:-Asia/Makassar}
     APP_TIMEZONE: ${APP_TIMEZONE:-Asia/Makassar}
-    # Full Laravel config forwarded explicitly so app/queue/scheduler work
-    # correctly with zero reliance on a physical backend/.env file existing
-    # on the deploy host (it's gitignored, so a plain `git pull` deploy
-    # never creates one). Everything here is settable from Dokploy's
-    # Environment Variables tab (which populates the root .env used for
-    # this compose file's ${VAR} interpolation) — no server file editing
-    # needed. APP_KEY has no safe default: if unset, Laravel fails fast
-    # with "No application encryption key has been specified" instead of
-    # silently running insecurely — generate one with
-    # `php artisan key:generate --show` and set it in the root .env /
-    # Dokploy Environment before first production deploy.
+
     APP_NAME: ${APP_NAME:-Zul Tennis Clinic Management System}
-    APP_ENV: ${APP_ENV:-local}
-    APP_KEY: ${APP_KEY:-}
-    APP_DEBUG: ${APP_DEBUG:-true}
-    APP_URL: ${APP_URL:-http://localhost:8090}
-    LOG_LEVEL: ${LOG_LEVEL:-debug}
+    APP_ENV: ${APP_ENV:-production}
+    APP_KEY: ${APP_KEY:?APP_KEY wajib diisi}
+    APP_DEBUG: ${APP_DEBUG:-false}
+    APP_URL: ${APP_URL:-https://zultennis.my.id}
+    LOG_LEVEL: ${LOG_LEVEL:-warning}
+
     DB_CONNECTION: mysql
     DB_HOST: mysql
     DB_PORT: "3306"
     DB_DATABASE: ${DB_DATABASE:-ztcms}
     DB_USERNAME: ${DB_USERNAME:-ztcms}
-    DB_PASSWORD: ${DB_PASSWORD:-ztcms}
+    DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD wajib diisi}
+
     SESSION_DRIVER: redis
     CACHE_STORE: redis
     QUEUE_CONNECTION: redis
+
     REDIS_HOST: redis
     REDIS_PORT: "6379"
     REDIS_PASSWORD: ${REDIS_PASSWORD:-null}
+
     FILESYSTEM_DISK: s3
     AWS_ENDPOINT: http://minio:9000
-    AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-ztcms_minio}
-    AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-change-me-minio-secret}
+    AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER:?MINIO_ROOT_USER wajib diisi}
+    AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD wajib diisi}
     AWS_BUCKET: ${MINIO_BUCKET:-ztcms-media}
-    AWS_URL: ${AWS_URL:-http://localhost:9010/ztcms-media}
-    AWS_DEFAULT_REGION: us-east-1
+    AWS_URL: ${AWS_URL:-https://media.zultennis.my.id/ztcms-media}
+    AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-us-east-1}
     AWS_USE_PATH_STYLE_ENDPOINT: "true"
+
     MAIL_MAILER: ${MAIL_MAILER:-log}
     MAIL_HOST: ${MAIL_HOST:-127.0.0.1}
     MAIL_PORT: ${MAIL_PORT:-2525}
     MAIL_USERNAME: ${MAIL_USERNAME:-null}
     MAIL_PASSWORD: ${MAIL_PASSWORD:-null}
-    MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-no-reply@zultennisclinic.test}
-    MAIL_FROM_NAME: ${APP_NAME:-Zul Tennis Clinic Management System}
-    SANCTUM_STATEFUL_DOMAINS: ${SANCTUM_STATEFUL_DOMAINS:-localhost:8088}
-    SPA_URL: ${SPA_URL:-http://localhost:8088}
-    PAYMENT_GATEWAY_WEBHOOK_SECRET: ${PAYMENT_GATEWAY_WEBHOOK_SECRET:-change-me-webhook-secret}
+    MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-no-reply@zultennis.my.id}
+    MAIL_FROM_NAME: ${MAIL_FROM_NAME:-Zul Tennis Clinic Management System}
+
+    SANCTUM_STATEFUL_DOMAINS: ${SANCTUM_STATEFUL_DOMAINS:-zultennis.my.id}
+    SPA_URL: ${SPA_URL:-https://zultennis.my.id}
+
+    PAYMENT_GATEWAY_WEBHOOK_SECRET: ${PAYMENT_GATEWAY_WEBHOOK_SECRET:?PAYMENT_GATEWAY_WEBHOOK_SECRET wajib diisi}
+
   volumes:
     - ./backend:/var/www/html
     - backend_vendor:/var/www/html/vendor
     - backend_storage:/var/www/html/storage
     - backend_bootstrap_cache:/var/www/html/bootstrap/cache
-  networks: [ztcms]
+
+  networks:
+    - ztcms
+
   depends_on:
     mysql:
       condition: service_healthy
@@ -74,121 +76,187 @@ x-backend-image: &backend-image
 services:
   app:
     <<: *backend-image
+
     healthcheck:
-      test: ["CMD", "sh", "-c", "nc -z 127.0.0.1 9000"]
+      test:
+        - CMD
+        - sh
+        - -c
+        - nc -z 127.0.0.1 9000
       interval: 10s
       timeout: 3s
       retries: 5
+      start_period: 20s
+
+    restart: unless-stopped
 
   nginx:
     <<: *dns
     image: nginx:1.27-alpine
+
     environment:
       TZ: ${TZ:-Asia/Makassar}
-    #ports:
-    #  - "8090:80"
+
     volumes:
       - ./backend:/var/www/html:ro
       - ./infra/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+
     depends_on:
       app:
         condition: service_healthy
+
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/health"]
+      test:
+        - CMD
+        - wget
+        - -qO-
+        - http://127.0.0.1/health
       interval: 10s
       timeout: 3s
       retries: 5
-    networks: [ztcms]
+      start_period: 10s
+
+    networks:
+      ztcms:
+        aliases:
+          - ztcms-api
+
+    restart: unless-stopped
 
   queue:
     <<: *backend-image
-    command: php artisan queue:work --tries=3 --backoff=5 --sleep=3
+    command:
+      - php
+      - artisan
+      - queue:work
+      - --tries=3
+      - --backoff=5
+      - --sleep=3
+      - --timeout=120
+
     restart: unless-stopped
 
   scheduler:
     <<: *backend-image
-    command: php artisan schedule:work
+    command:
+      - php
+      - artisan
+      - schedule:work
+
     restart: unless-stopped
 
   mysql:
     <<: *dns
     image: mysql:8.0
+
     environment:
       MYSQL_DATABASE: ${DB_DATABASE:-ztcms}
       MYSQL_USER: ${DB_USERNAME:-ztcms}
-      MYSQL_PASSWORD: ${DB_PASSWORD:-ztcms}
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD wajib diisi}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?DB_ROOT_PASSWORD wajib diisi}
       TZ: ${TZ:-Asia/Makassar}
+
     volumes:
       - mysql_data:/var/lib/mysql
-    #ports:
-    #  - "33017:3306"
+
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${DB_ROOT_PASSWORD:-root}"]
+      test:
+        - CMD-SHELL
+        - mysqladmin ping -h 127.0.0.1 -uroot -p"$${MYSQL_ROOT_PASSWORD}" --silent
       interval: 10s
       timeout: 5s
-      retries: 10
-    networks: [ztcms]
+      retries: 15
+      start_period: 30s
+
+    networks:
+      - ztcms
+
+    restart: unless-stopped
 
   redis:
     <<: *dns
     image: redis:7-alpine
+
     environment:
       TZ: ${TZ:-Asia/Makassar}
+
     volumes:
       - redis_data:/data
+
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test:
+        - CMD
+        - redis-cli
+        - ping
       interval: 10s
       timeout: 3s
       retries: 5
-    networks: [ztcms]
+
+    networks:
+      - ztcms
+
+    restart: unless-stopped
 
   minio:
     <<: *dns
     image: minio/minio:latest
-    command: server /data --console-address ":9001"
+
+    command:
+      - server
+      - /data
+      - --console-address
+      - :9001
+
     environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-ztcms_minio}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-change-me-minio-secret}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?MINIO_ROOT_USER wajib diisi}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD wajib diisi}
       TZ: ${TZ:-Asia/Makassar}
+
     volumes:
       - minio_data:/data
-    #ports:
-    #  - "${MINIO_API_PORT:-9000}:9000"
-    #  - "${MINIO_CONSOLE_PORT:-9001}:9001"
+
     healthcheck:
-      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/9000"]
+      test:
+        - CMD
+        - mc
+        - ready
+        - local
       interval: 10s
-      timeout: 3s
-      retries: 5
-    networks: [ztcms]
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+    networks:
+      - ztcms
+
+    restart: unless-stopped
 
   frontend:
     <<: *dns
+
     build:
       context: ./frontend
       target: runner
       args:
-        # Baked into the client JS bundle at build time (Next.js inlines
-        # NEXT_PUBLIC_* at build, not read live at container runtime) — must
-        # be passed here, not just under environment: below.
-        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:8088}
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-https://zultennis.my.id}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-/api/backend}
+
     environment:
       TZ: ${TZ:-Asia/Makassar}
-      # Kept here too for the server-rendered (non-bundled) code path that
-      # does read it live; harmless duplication with the build arg above.
-      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:8088}
-      # Server-side only (never sent to the browser): lets Next.js route
-      # handlers reach the API over the docker network instead of round-
-      # tripping through the host port. Keeps the Sanctum token off client JS
-      # entirely — the browser only ever talks to same-origin /api/backend/*.
-      API_INTERNAL_URL: ${API_INTERNAL_URL:-http://nginx/api/v1}
-    #ports:
-    #  - "8088:3000"
+      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-https://zultennis.my.id}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-/api/backend}
+
+      # Gunakan alias unik agar tidak masuk ke container nginx project lain.
+      API_INTERNAL_URL: ${API_INTERNAL_URL:-http://ztcms-api/api/v1}
+
     depends_on:
-      - nginx
-    networks: [ztcms]
+      nginx:
+        condition: service_healthy
+
+    networks:
+      - ztcms
+
+    restart: unless-stopped
 
 networks:
   ztcms:
