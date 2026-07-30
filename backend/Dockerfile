@@ -16,6 +16,8 @@ ENV TZ=Asia/Makassar
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 COPY docker/php.ini /usr/local/etc/php/conf.d/99-ztcms.ini
 COPY docker/opcache.ini /usr/local/etc/php/conf.d/98-opcache.ini
+COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
 
 WORKDIR /var/www/html
 
@@ -30,4 +32,5 @@ RUN composer dump-autoload --optimize \
 USER www
 
 EXPOSE 9000
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD ["php-fpm"]
