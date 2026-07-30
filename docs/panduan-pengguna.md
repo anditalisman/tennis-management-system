@@ -156,16 +156,23 @@ berisi:
 - **Anggota Kelas** — daftar anggota aktif, staf bisa **Keluarkan** anggota.
 - **Waiting List** — peserta yang menunggu kalau kelas penuh (otomatis naik
   jika ada slot kosong).
+- **Hapus Kelas** *(staf)* — tombol di halaman detail kelas untuk menghapus
+  kelas beserta jadwalnya.
 
 ### Jadwal
 Daftar sesi latihan (tanggal, waktu, tipe, status). Staf bisa **Tambah
 Jadwal** (pilih kelas, lapangan, pelatih, tanggal, jam, tipe sesi).
 
-Detail jadwal:
-- **Peserta**: tombol **Check-in Sekarang** untuk presensi mandiri.
+Detail jadwal menampilkan lapangan dan pelatih sesi tersebut, lalu:
+- **Peserta**: tombol **Check-in Sekarang** untuk presensi mandiri —
+  langsung tercatat **Hadir** saat itu juga, tidak perlu menunggu persetujuan
+  pelatih. Pelatih/staf tetap bisa mengoreksi statusnya lewat **Verifikasi
+  Absensi** jika ternyata keliru (mis. peserta check-in lalu pulang lebih
+  awal).
 - **Staf/Pelatih**: kartu **Verifikasi Absensi** — set status tiap anggota
   kelas (Hadir/Terlambat/Tidak Hadir/Izin/Sakit/Pulang Awal) lalu **Simpan
-  Absensi** sekaligus.
+  Absensi** sekaligus. Dipakai juga untuk mencatat kehadiran peserta yang
+  tidak check-in mandiri lewat aplikasi.
 - **Staf**: kartu **Batalkan Jadwal** — wajib isi alasan pembatalan. (Tidak
   ada fitur reschedule terpisah — kelola lewat batal + buat jadwal baru bila
   perlu.)
@@ -204,8 +211,10 @@ pelatih penilai; pelatih yang login langsung menilai atas namanya sendiri.
 ### Galeri
 Grid foto/video kegiatan. **Hanya Pelatih dan Super Admin** yang bisa
 **Unggah Galeri** (pilih kelas, judul opsional, upload beberapa file
-foto/video sekaligus). Galeri baru berstatus menunggu moderasi. Di halaman
-detail, staf/pelatih bisa **Publikasikan** (agar tampil di situs publik) atau
+foto/video sekaligus) — maksimum 10MB per file; foto otomatis dikompresi
+server tanpa terlihat menurunkan kualitas. Galeri baru berstatus menunggu
+moderasi. Di halaman detail, staf/pelatih dari kelas yang sama bisa
+**Tambah Media** lagi, **Publikasikan** (agar tampil di situs publik), atau
 **Hapus Galeri**.
 
 ### Pengumuman
@@ -233,7 +242,8 @@ Detail tagihan:
 - **Riwayat Pembayaran** — semua pembayaran yang pernah masuk beserta status
   (menunggu/terverifikasi/ditolak) dan bukti transfer bila ada.
 - **Kirim Pembayaran** *(peserta/wali/super admin)* — pilih metode
-  (Transfer/Tunai/QRIS), jumlah, no. referensi, unggah bukti transfer.
+  (Transfer/Tunai/QRIS), jumlah, no. referensi, unggah bukti transfer
+  (maksimum 10MB, foto otomatis dikompresi).
 - **Verifikasi/Tolak** *(finance/super admin)* — menyetujui atau menolak
   pembayaran yang masuk; disetujui → tagihan otomatis jadi lunas/sebagian.
 
@@ -291,10 +301,12 @@ Lihat [bagian 4](#portal--umum).
 2. Setelah sesi trial berjalan dan peserta setuju lanjut, staf klik
    **Konversi ke Anggota** pada baris trial tersebut di kelas yang sama.
 
-**Verifikasi kehadiran sesi latihan:**
+**Mencatat kehadiran sesi latihan:**
 1. Peserta klik **Check-in Sekarang** di halaman detail jadwal saat sesi
-   berlangsung (opsional, tergantung kebijakan klinik).
-2. Pelatih/staf buka jadwal yang sama, isi status kehadiran tiap anggota di
+   berlangsung — langsung tercatat Hadir, tidak ada langkah persetujuan
+   pelatih lagi.
+2. Untuk peserta yang tidak check-in mandiri (atau bila status perlu
+   dikoreksi), pelatih/staf buka jadwal yang sama, isi status kehadiran di
    **Verifikasi Absensi**, klik **Simpan Absensi**.
 
 ---
