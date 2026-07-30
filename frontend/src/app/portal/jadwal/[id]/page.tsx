@@ -30,7 +30,13 @@ type TrainingClass = { id: number; name: string };
 type Court = { id: number; name: string };
 type Coach = { id: number; name: string | null };
 type Member = { id: string; full_name: string; registration_no: string };
-type AttendanceRecord = { id: number; participant_id: string; participant_name: string | null; status: string };
+type AttendanceRecord = {
+  id: number;
+  participant_id: string;
+  participant_name: string | null;
+  status: string;
+  check_in_at: string | null;
+};
 
 const STATUS_OPTIONS = [
   { value: "present", label: "Hadir" },
@@ -68,6 +74,10 @@ export default async function JadwalDetailPage({
   const members = (staff || isCoach) ? ((await serverApiOrNull<Member[]>(`/classes/${schedule.class_id}/members`)) ?? []) : [];
 
   const attendanceByParticipant = new Map((attendance ?? []).map((a) => [a.participant_id, a]));
+  // A participant can only ever see their own attendance record here
+  // (AttendanceController::index filters by canSeeParticipant), so this is
+  // safely "did I already check in", not "someone else's record".
+  const myAttendance = isParticipant ? (attendance ?? [])[0] : undefined;
   const canManageAttendance = staff || isCoach;
   const canCancel = staff;
   const isCancelled = schedule.status === "cancelled";
@@ -106,10 +116,21 @@ export default async function JadwalDetailPage({
       {isParticipant && !isCancelled && (
         <Card className="mt-6">
           <CardBody className="flex flex-wrap items-center justify-between gap-4">
-            <p className="text-sm text-(--color-ink-700)">Sudah sampai di lokasi latihan?</p>
-            <form action={checkInAction.bind(null, scheduleId)}>
-              <Button type="submit">Check-in Sekarang</Button>
-            </form>
+            {myAttendance ? (
+              <>
+                <p className="text-sm text-(--color-ink-700)">
+                  Anda sudah check-in {myAttendance.check_in_at ? `pukul ${formatTime(myAttendance.check_in_at)}` : ""}, menunggu verifikasi pelatih.
+                </p>
+                <StatusBadge status={myAttendance.status} />
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-(--color-ink-700)">Sudah sampai di lokasi latihan?</p>
+                <form action={checkInAction.bind(null, scheduleId)}>
+                  <Button type="submit">Check-in Sekarang</Button>
+                </form>
+              </>
+            )}
           </CardBody>
         </Card>
       )}
