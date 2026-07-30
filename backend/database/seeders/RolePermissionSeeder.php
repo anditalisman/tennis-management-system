@@ -27,8 +27,13 @@ class RolePermissionSeeder extends Seeder
             'verify' => ['administrator'],
         ],
         'programs-schedules' => [
-            'view' => ['management', 'coach', 'participant', 'guardian'],
-            'manage' => ['super-admin', 'administrator'],
+            'view' => ['coach', 'participant', 'guardian'],
+            // "Staf" (super-admin/management/administrator) is treated as one
+            // operational tier throughout the frontend (isStaff()) for this
+            // module's manage actions (create/edit/delete class, remove
+            // member, etc.) — management was missing here, so those buttons
+            // rendered but 403'd on submit.
+            'manage' => ['super-admin', 'management', 'administrator'],
         ],
         'courts-inventory' => [
             'view' => ['management', 'coach'],
@@ -45,8 +50,14 @@ class RolePermissionSeeder extends Seeder
             'verify' => ['administrator'],
         ],
         'evaluations' => [
-            'view' => ['management', 'administrator', 'participant', 'guardian'],
-            'manage' => ['super-admin', 'coach'],
+            'view' => ['participant', 'guardian'],
+            // The evaluation form has always let staff pick which coach an
+            // entry is recorded under (EvaluationForm's coach selector,
+            // frontend/src/app/portal/evaluasi/page.tsx) — a real, built
+            // feature for staff filling evaluations on a coach's behalf, not
+            // just something the frontend merely renders. Staff needs
+            // .manage to actually submit through it.
+            'manage' => ['super-admin', 'management', 'administrator', 'coach'],
         ],
         'galleries' => [
             'view' => ['management', 'participant', 'guardian'],
