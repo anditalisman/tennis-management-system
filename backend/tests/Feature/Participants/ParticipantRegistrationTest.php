@@ -182,7 +182,7 @@ class ParticipantRegistrationTest extends TestCase
         $response->assertCreated()->assertJsonPath('data.user_id', $user->uuid);
     }
 
-    public function test_registration_generates_sequential_registration_numbers_per_branch(): void
+    public function test_registration_generates_sequential_registration_numbers(): void
     {
         $branch = Branch::factory()->create(['slug' => 'pusat']);
 
@@ -204,7 +204,7 @@ class ParticipantRegistrationTest extends TestCase
         $first = $this->postJson('/api/v1/participants', $payload('Anak Satu', 'anaksatu@example.com', 'walisatu@example.com'))->json('data');
         $second = $this->postJson('/api/v1/participants', $payload('Anak Dua', 'anakdua@example.com', 'waliduaa@example.com'))->json('data');
 
-        $this->assertStringContainsString('PUSAT-', $first['registration_no']);
+        $this->assertMatchesRegularExpression('/^ZT-\d{6}-\d{4}$/', $first['registration_no']);
         $this->assertNotSame($first['registration_no'], $second['registration_no']);
     }
 }
