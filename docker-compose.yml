@@ -243,6 +243,10 @@ services:
 
     environment:
       TZ: ${TZ:-Asia/Makassar}
+       # Wajib agar Next.js dapat dijangkau Traefik.
+      HOSTNAME: "0.0.0.0"
+      PORT: "3000"
+      
       NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-https://zultennis.my.id}
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-/api/backend}
 
