@@ -36,6 +36,12 @@ class RolePermissionSeeder extends Seeder
             'manage' => ['super-admin', 'management', 'administrator'],
         ],
         'courts-inventory' => [
+            // Deliberately NOT participant/guardian: this same permission
+            // also gates /inventory-items (equipment stock), which they
+            // must not see. Their read access to a single court (so the
+            // schedule detail page can show which Lapangan a session is
+            // on) is authorized separately in CourtController::show()
+            // instead of through this blanket module permission.
             'view' => ['management', 'coach'],
             'manage' => ['super-admin', 'administrator'],
         ],
