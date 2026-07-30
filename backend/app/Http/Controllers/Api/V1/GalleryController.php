@@ -12,13 +12,17 @@ use App\Models\GalleryMedia;
 use App\Models\Role;
 use App\Models\TrainingClass;
 use App\Models\User;
+use App\Services\ImageCompressor;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class GalleryController extends Controller
 {
     use RestrictsParticipantAccess;
+
+    public function __construct(private readonly ImageCompressor $compressor) {}
 
     public function index(Request $request): JsonResponse
     {
@@ -89,9 +93,17 @@ class GalleryController extends Controller
             'Anda tidak memiliki izin untuk menambah media ke galeri ini.',
         );
 
+        $directory = 'galleries/'.$gallery->id;
+
         foreach ($request->file('files') as $file) {
             $isVideo = str_starts_with((string) $file->getMimeType(), 'video/');
-            $path = $file->store('galleries/'.$gallery->id, 's3');
+
+            if (! $isVideo && $this->compressor->isCompressible($file)) {
+                $path = $directory.'/'.Str::random(40).'.'.strtolower((string) $file->getClientOriginalExtension());
+                Storage::disk('s3')->put($path, $this->compressor->compress($file));
+            } else {
+                $path = $file->store($directory, 's3');
+            }
 
             GalleryMedia::query()->create([
                 'gallery_id' => $gallery->id,

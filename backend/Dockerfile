@@ -25,7 +25,7 @@ RUN composer install --no-scripts --no-autoloader --prefer-dist --no-interaction
 COPY . .
 RUN composer dump-autoload --optimize \
     && addgroup -g 1000 www && adduser -G www -u 1000 -D www \
-    && chown -R www:www /var/www/html/storage /var/www/html/bootstrap/cache
+    && chown -R www:www /var/www/html/vendor /var/www/html/storage /var/www/html/bootstrap/cache
 
 USER www
 

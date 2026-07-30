@@ -18,7 +18,7 @@ class UploadGalleryMediaRequest extends FormRequest
     {
         return [
             'files' => ['required', 'array', 'min:1', 'max:20'],
-            'files.*' => ['required', 'file', 'mimes:jpg,jpeg,png,webp,mp4,mov', 'max:51200'],
+            'files.*' => ['required', 'file', 'mimes:jpg,jpeg,png,webp,mp4,mov', 'max:10240'],
         ];
     }
 }

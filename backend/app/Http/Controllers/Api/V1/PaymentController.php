@@ -11,12 +11,17 @@ use App\Models\Notification;
 use App\Models\Payment;
 use App\Models\PaymentConfirmation;
 use App\Models\Role;
+use App\Services\ImageCompressor;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class PaymentController extends Controller
 {
+    public function __construct(private readonly ImageCompressor $compressor) {}
+
     public function index(Request $request, Invoice $invoice): JsonResponse
     {
         app(InvoiceController::class)->authorizeView($request->user(), $invoice);
@@ -53,7 +58,16 @@ class PaymentController extends Controller
             ]);
 
             if ($request->hasFile('proof')) {
-                $path = $request->file('proof')->store('payments/'.$invoice->id, 's3');
+                $proof = $request->file('proof');
+                $directory = 'payments/'.$invoice->id;
+
+                if ($this->compressor->isCompressible($proof)) {
+                    $path = $directory.'/'.Str::random(40).'.'.strtolower((string) $proof->getClientOriginalExtension());
+                    Storage::disk('s3')->put($path, $this->compressor->compress($proof));
+                } else {
+                    $path = $proof->store($directory, 's3');
+                }
+
                 PaymentConfirmation::query()->create([
                     'payment_id' => $payment->id,
                     'proof_path' => $path,
