@@ -40,6 +40,8 @@ type Payment = {
   created_at: string;
 };
 
+type PaymentMethod = { id: number; type: string; label: string; details: string | null; image_url: string | null };
+
 const PAYABLE_STATUSES = ["unpaid", "partially_paid", "overdue"];
 
 export default async function TagihanDetailPage({
@@ -61,6 +63,7 @@ export default async function TagihanDetailPage({
 
   const canVerify = hasRole(session.user.roles, ROLES.SUPER_ADMIN, ROLES.FINANCE);
   const canPay = hasRole(session.user.roles, ROLES.SUPER_ADMIN, ROLES.PARTICIPANT, ROLES.GUARDIAN) && PAYABLE_STATUSES.includes(invoice.status);
+  const paymentMethods = canPay ? ((await serverApiOrNull<PaymentMethod[]>("/payment-methods")) ?? []) : [];
   const outstanding = invoice.total_amount - invoice.amount_paid;
 
   return (
@@ -192,7 +195,7 @@ export default async function TagihanDetailPage({
         <Card className="mt-6">
           <CardHeader title="Kirim Pembayaran" description="Unggah bukti transfer bila membayar via transfer atau QRIS." />
           <CardBody>
-            <PaymentForm invoiceId={invoiceId} defaultAmount={outstanding > 0 ? outstanding : invoice.total_amount} />
+            <PaymentForm invoiceId={invoiceId} defaultAmount={outstanding > 0 ? outstanding : invoice.total_amount} methods={paymentMethods} />
           </CardBody>
         </Card>
       )}

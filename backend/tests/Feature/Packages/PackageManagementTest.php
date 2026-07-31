@@ -29,12 +29,16 @@ class PackageManagementTest extends TestCase
         return $user;
     }
 
-    public function test_participant_cannot_view_or_manage_packages(): void
+    public function test_participant_can_view_but_not_manage_packages(): void
     {
+        // Participants need to browse the package catalog to self-checkout
+        // (see PackageCheckoutTest) — packages.view already granted them
+        // this in RolePermissionSeeder; only .manage (create/edit/delete)
+        // stays staff-only.
         Package::factory()->count(2)->create();
         $participant = $this->userWithRole(Role::PARTICIPANT);
 
-        $this->actingAs($participant, 'sanctum')->getJson('/api/v1/packages')->assertForbidden();
+        $this->actingAs($participant, 'sanctum')->getJson('/api/v1/packages')->assertOk();
         $this->actingAs($participant, 'sanctum')->postJson('/api/v1/packages', ['name' => 'X'])->assertForbidden();
     }
 

@@ -52,3 +52,28 @@ export async function deletePackageAction(packageId: number): Promise<void> {
     revalidatePath("/portal/paket");
   });
 }
+
+export type CheckoutFormState = { error?: string; fieldErrors?: Record<string, string> } | undefined;
+
+export async function checkoutPackageAction(
+  packageId: number,
+  _prevState: CheckoutFormState,
+  formData: FormData,
+): Promise<CheckoutFormState> {
+  const participantId = String(formData.get("participant_id") ?? "") || undefined;
+  const voucherCode = String(formData.get("voucher_code") ?? "") || undefined;
+
+  let invoiceId: number;
+  try {
+    invoiceId = await serverApi<{ id: number }>(`/packages/${packageId}/checkout`, {
+      method: "POST",
+      body: { participant_id: participantId, voucher_code: voucherCode },
+    }).then((i) => i.id);
+  } catch (error) {
+    if (error instanceof ApiError) return { error: error.message, fieldErrors: error.fieldErrors() };
+    return { error: "Tidak dapat terhubung ke server. Coba lagi." };
+  }
+
+  revalidatePath("/portal/tagihan");
+  redirect(`/portal/tagihan/${invoiceId}`);
+}
