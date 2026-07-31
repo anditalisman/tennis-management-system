@@ -12,7 +12,6 @@ type Package = {
   session_count: number;
   validity_days: number;
   price: number;
-  type: string;
   status?: string;
 };
 

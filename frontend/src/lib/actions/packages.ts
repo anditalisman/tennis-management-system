@@ -14,7 +14,6 @@ function payloadFrom(formData: FormData) {
     session_count: Number(formData.get("session_count")),
     validity_days: formData.get("validity_days") ? Number(formData.get("validity_days")) : undefined,
     price: Number(formData.get("price")),
-    type: String(formData.get("type") ?? ""),
     status: String(formData.get("status") ?? "") || undefined,
   };
 }

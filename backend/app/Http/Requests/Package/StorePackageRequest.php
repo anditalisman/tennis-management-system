@@ -23,7 +23,7 @@ class StorePackageRequest extends FormRequest
             'session_count' => ['required', 'integer', 'min:1'],
             'validity_days' => ['nullable', 'integer', 'min:1'],
             'price' => ['required', 'numeric', 'min:0'],
-            'type' => ['required', Rule::in([Package::TYPE_PRIVATE, Package::TYPE_KELOMPOK, Package::TYPE_KORPORAT])],
+            'type' => ['nullable', 'string', 'max:20'],
             'status' => ['nullable', Rule::in([Package::STATUS_ACTIVE, Package::STATUS_INACTIVE])],
         ];
     }

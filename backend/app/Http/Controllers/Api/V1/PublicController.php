@@ -43,7 +43,6 @@ class PublicController extends Controller
     {
         $packages = Package::query()
             ->where('status', Package::STATUS_ACTIVE)
-            ->orderBy('type')
             ->orderBy('price')
             ->get();
 

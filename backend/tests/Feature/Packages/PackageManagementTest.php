@@ -49,26 +49,12 @@ class PackageManagementTest extends TestCase
             'name' => 'Paket 8x',
             'session_count' => 8,
             'price' => 800000,
-            'type' => Package::TYPE_KELOMPOK,
         ]);
 
         $response->assertCreated()
             ->assertJsonPath('data.name', 'Paket 8x')
-            ->assertJsonPath('data.type', Package::TYPE_KELOMPOK)
             ->assertJsonPath('data.status', Package::STATUS_ACTIVE)
             ->assertJsonPath('data.validity_days', 90);
-    }
-
-    public function test_package_type_must_be_one_of_the_known_categories(): void
-    {
-        $admin = $this->userWithRole(Role::ADMINISTRATOR);
-
-        $this->actingAs($admin, 'sanctum')->postJson('/api/v1/packages', [
-            'name' => 'Paket Aneh',
-            'session_count' => 8,
-            'price' => 800000,
-            'type' => 'reguler',
-        ])->assertUnprocessable()->assertJsonValidationErrors(['type']);
     }
 
     public function test_coach_cannot_manage_packages(): void

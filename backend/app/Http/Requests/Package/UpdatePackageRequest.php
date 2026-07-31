@@ -23,7 +23,7 @@ class UpdatePackageRequest extends FormRequest
             'session_count' => ['sometimes', 'required', 'integer', 'min:1'],
             'validity_days' => ['nullable', 'integer', 'min:1'],
             'price' => ['sometimes', 'required', 'numeric', 'min:0'],
-            'type' => ['sometimes', 'required', Rule::in([Package::TYPE_PRIVATE, Package::TYPE_KELOMPOK, Package::TYPE_KORPORAT])],
+            'type' => ['nullable', 'string', 'max:20'],
             'status' => ['nullable', Rule::in([Package::STATUS_ACTIVE, Package::STATUS_INACTIVE])],
         ];
     }
