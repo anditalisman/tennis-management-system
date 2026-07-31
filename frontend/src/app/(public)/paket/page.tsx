@@ -7,8 +7,6 @@ export const metadata = { title: "Paket & Biaya" };
 
 type Package = {
   id: number;
-  program_id: number;
-  program_name: string | null;
   name: string;
   session_count: number;
   validity_days: number;
@@ -16,14 +14,29 @@ type Package = {
   type: string;
 };
 
+const TYPE_LABELS: Record<string, string> = {
+  private: "Private",
+  kelompok: "Kelompok",
+  korporat: "Korporat",
+};
+
+const TYPE_DESCRIPTIONS: Record<string, string> = {
+  private: "Sesi latihan satu lawan satu dengan pelatih.",
+  kelompok: "Jam latihan digabung dengan peserta lain dalam satu kelas.",
+  korporat: "Untuk satu instansi atau perusahaan.",
+};
+
+const TYPE_ORDER = ["private", "kelompok", "korporat"];
+
 export default async function PaketPage() {
   const packages = await serverApi<Package[]>("/public/packages");
 
   const grouped = packages.reduce<Record<string, Package[]>>((acc, pkg) => {
-    const key = pkg.program_name ?? "Lainnya";
-    acc[key] = acc[key] ? [...acc[key], pkg] : [pkg];
+    acc[pkg.type] = acc[pkg.type] ? [...acc[pkg.type], pkg] : [pkg];
     return acc;
   }, {});
+
+  const sortedTypes = Object.keys(grouped).sort((a, b) => TYPE_ORDER.indexOf(a) - TYPE_ORDER.indexOf(b));
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-16">
@@ -31,9 +44,7 @@ export default async function PaketPage() {
       <h1 className="mt-2 font-display text-3xl font-extrabold text-(--color-ink-900) sm:text-4xl">
         Pilihan Paket Latihan
       </h1>
-      <p className="mt-4 max-w-2xl text-(--color-ink-500)">
-        Harga di bawah berlaku untuk sesi kelompok reguler. Hubungi kami untuk paket privat atau kebutuhan khusus.
-      </p>
+      <p className="mt-4 max-w-2xl text-(--color-ink-500)">Pilih paket private, kelompok, atau korporat sesuai kebutuhan Anda.</p>
 
       {packages.length === 0 ? (
         <div className="mt-10">
@@ -41,11 +52,12 @@ export default async function PaketPage() {
         </div>
       ) : (
         <div className="mt-10 flex flex-col gap-10">
-          {Object.entries(grouped).map(([programName, items]) => (
-            <div key={programName}>
-              <h2 className="font-display text-xl font-bold text-(--color-ink-900)">{programName}</h2>
+          {sortedTypes.map((type) => (
+            <div key={type}>
+              <h2 className="font-display text-xl font-bold text-(--color-ink-900)">{TYPE_LABELS[type] ?? type}</h2>
+              {TYPE_DESCRIPTIONS[type] && <p className="mt-1 text-sm text-(--color-ink-500)">{TYPE_DESCRIPTIONS[type]}</p>}
               <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {items.map((pkg) => (
+                {grouped[type].map((pkg) => (
                   <Card key={pkg.id}>
                     <CardHeader title={pkg.name} />
                     <CardBody>

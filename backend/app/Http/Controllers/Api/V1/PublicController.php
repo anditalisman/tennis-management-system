@@ -42,17 +42,14 @@ class PublicController extends Controller
     public function packages(): JsonResponse
     {
         $packages = Package::query()
-            ->with('program:id,name')
             ->where('status', Package::STATUS_ACTIVE)
-            ->orderBy('program_id')
+            ->orderBy('type')
             ->orderBy('price')
             ->get();
 
         return response()->json([
             'data' => $packages->map(fn (Package $package) => [
                 'id' => $package->id,
-                'program_id' => $package->program_id,
-                'program_name' => $package->program?->name,
                 'name' => $package->name,
                 'session_count' => $package->session_count,
                 'validity_days' => $package->validity_days,

@@ -19,12 +19,11 @@ class StorePackageRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'program_id' => ['required', 'integer', 'exists:programs,id'],
             'name' => ['required', 'string', 'max:150'],
             'session_count' => ['required', 'integer', 'min:1'],
             'validity_days' => ['nullable', 'integer', 'min:1'],
             'price' => ['required', 'numeric', 'min:0'],
-            'type' => ['nullable', 'string', 'max:20'],
+            'type' => ['required', Rule::in([Package::TYPE_PRIVATE, Package::TYPE_KELOMPOK, Package::TYPE_KORPORAT])],
             'status' => ['nullable', Rule::in([Package::STATUS_ACTIVE, Package::STATUS_INACTIVE])],
         ];
     }

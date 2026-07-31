@@ -30,14 +30,13 @@ class PublicListingsTest extends TestCase
             ->assertJsonPath('data.0.name', 'Aktif');
     }
 
-    public function test_guest_can_list_active_packages_with_program_name(): void
+    public function test_guest_can_list_active_packages_with_type(): void
     {
-        $program = Program::factory()->create(['name' => 'Junior']);
-        Package::factory()->create(['program_id' => $program->id, 'status' => Package::STATUS_ACTIVE]);
+        Package::factory()->create(['type' => Package::TYPE_KELOMPOK, 'status' => Package::STATUS_ACTIVE]);
         Package::factory()->create(['status' => Package::STATUS_INACTIVE]);
 
         $response = $this->getJson('/api/v1/public/packages')->assertOk()->assertJsonCount(1, 'data');
-        $response->assertJsonPath('data.0.program_name', 'Junior');
+        $response->assertJsonPath('data.0.type', Package::TYPE_KELOMPOK);
     }
 
     public function test_guest_can_list_active_coaches_without_email(): void
