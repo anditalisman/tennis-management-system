@@ -20,15 +20,9 @@ class Package extends Model
 
     public const STATUS_INACTIVE = 'inactive';
 
-    public const TYPE_PRIVATE = 'private';
-
-    public const TYPE_KELOMPOK = 'kelompok';
-
-    public const TYPE_KORPORAT = 'korporat';
-
     protected $attributes = [
         'validity_days' => 90,
-        'type' => self::TYPE_KELOMPOK,
+        'type' => 'regular',
         'status' => self::STATUS_ACTIVE,
     ];
 

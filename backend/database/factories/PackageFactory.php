@@ -17,7 +17,7 @@ class PackageFactory extends Factory
             'session_count' => fake()->numberBetween(4, 20),
             'validity_days' => 90,
             'price' => fake()->numberBetween(500, 5000) * 1000,
-            'type' => fake()->randomElement([Package::TYPE_PRIVATE, Package::TYPE_KELOMPOK, Package::TYPE_KORPORAT]),
+            'type' => 'regular',
             'status' => Package::STATUS_ACTIVE,
         ];
     }

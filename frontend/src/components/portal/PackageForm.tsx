@@ -12,7 +12,6 @@ type Package = {
   session_count: number;
   validity_days: number;
   price: number;
-  type: string;
   status?: string;
 };
 
@@ -25,11 +24,6 @@ export function PackageForm({ pkg }: { pkg?: Package }) {
     <form action={formAction} className="flex flex-col gap-4">
       {state?.error && <Alert tone="crit">{state.error}</Alert>}
       <Input label="Nama paket" name="name" required defaultValue={pkg?.name} error={fieldErrors.name} />
-      <Select label="Jenis paket" name="type" required defaultValue={pkg?.type ?? "kelompok"} error={fieldErrors.type}>
-        <option value="private">Private</option>
-        <option value="kelompok">Kelompok (jam digabung dengan peserta lain)</option>
-        <option value="korporat">Korporat (instansi/perusahaan)</option>
-      </Select>
       <div className="grid grid-cols-2 gap-4">
         <Input
           label="Jumlah sesi"
