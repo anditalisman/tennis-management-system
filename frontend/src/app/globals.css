@@ -70,6 +70,33 @@
     --color-paper-raised: #161f19;
     --background: var(--color-paper);
     --foreground: #eef2ec;
+
+    /* Every ink/court/status shade below is used directly as text, border,
+       or icon color throughout the app (Field, Button, Badge, Alert, ...),
+       not just as a background. Without dark-mode values here, that text
+       stays at its light-mode near-black/dark shade on top of the
+       now-dark background above — reproducing exactly the "invisible
+       form/text" bug this block fixes. Lightness order is inverted from
+       light mode (900 = strongest/most legible, 300 = most subtle) so the
+       same semantic usage (e.g. ink-500 for helper text) keeps working. */
+    --color-ink-900: #eef2ec;
+    --color-ink-700: #b9c4ba;
+    --color-ink-500: #8b988c;
+    --color-ink-300: #5a655c;
+
+    /* court-500 only — court-600/700 are also used as solid brand
+       backgrounds (hero splash, primary buttons, active nav state) that
+       must stay the deep brand green in both themes, so they're
+       deliberately not overridden here even though that means links/
+       headings using them as text read at lower (not zero) contrast in
+       dark mode. court-500 has no such background usage, so it's safe to
+       brighten for its role as an input focus border/ring. */
+    --color-court-500: #3fae66;
+
+    --color-good: #3ecf8e;
+    --color-warn: #e0a83f;
+    --color-crit: #d9765f;
+    --color-info: #6fa8cc;
   }
 }
 
