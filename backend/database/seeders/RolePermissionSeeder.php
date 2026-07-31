@@ -84,6 +84,10 @@ class RolePermissionSeeder extends Seeder
             'verify' => ['finance'],
         ],
         'vouchers-refunds' => ['view' => ['management'], 'manage' => ['super-admin', 'finance']],
+        'payment-methods' => [
+            'view' => ['management', 'participant', 'guardian', 'finance'],
+            'manage' => ['super-admin', 'finance'],
+        ],
         'coaches' => [
             'view' => ['management', 'participant', 'guardian'],
             'manage' => ['super-admin', 'administrator', 'coach'],

@@ -47,7 +47,7 @@ export const NAV_SECTIONS: NavSection[] = [
   {
     title: "Keuangan",
     items: [
-      { href: "/portal/paket", label: "Paket", roles: [...STAFF, FINANCE] },
+      { href: "/portal/paket", label: "Paket", roles: [...STAFF, FINANCE, PARTICIPANT, GUARDIAN] },
       { href: "/portal/tagihan", label: "Tagihan", roles: [...STAFF, FINANCE, PARTICIPANT, GUARDIAN] },
       { href: "/portal/voucher", label: "Voucher", roles: [SUPER_ADMIN, MANAGEMENT, FINANCE] },
       { href: "/portal/laporan", label: "Laporan", roles: [...STAFF, COACH, FINANCE] },
@@ -57,6 +57,7 @@ export const NAV_SECTIONS: NavSection[] = [
     title: "Pengaturan",
     items: [
       { href: "/portal/pengaturan/pengguna", label: "Pengguna & Peran", roles: [SUPER_ADMIN] },
+      { href: "/portal/pengaturan/metode-pembayaran", label: "Metode Pembayaran", roles: [SUPER_ADMIN, FINANCE] },
       { href: "/portal/profil", label: "Profil Saya" },
     ],
   },

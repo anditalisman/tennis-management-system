@@ -18,10 +18,12 @@ use App\Http\Controllers\Api\V1\InventoryItemController;
 use App\Http\Controllers\Api\V1\InventoryTransactionController;
 use App\Http\Controllers\Api\V1\InvoiceController;
 use App\Http\Controllers\Api\V1\NotificationController;
+use App\Http\Controllers\Api\V1\PackageCheckoutController;
 use App\Http\Controllers\Api\V1\PackageController;
 use App\Http\Controllers\Api\V1\ParticipantController;
 use App\Http\Controllers\Api\V1\PaymentController;
 use App\Http\Controllers\Api\V1\PaymentGatewayWebhookController;
+use App\Http\Controllers\Api\V1\PaymentMethodController;
 use App\Http\Controllers\Api\V1\ProgramController;
 use App\Http\Controllers\Api\V1\PublicController;
 use App\Http\Controllers\Api\V1\ReferralController;
@@ -203,6 +205,14 @@ Route::prefix('v1')->group(function () {
             Route::patch('/packages/{package}', [PackageController::class, 'update']);
             Route::delete('/packages/{package}', [PackageController::class, 'destroy']);
         });
+        // Self-service: a participant (or a guardian, for their own child)
+        // registers for a package themselves — reuses the payments.manage
+        // permission since this is fundamentally "take on a payment
+        // obligation for myself", the same thing that permission already
+        // covers for submitting a payment.
+        Route::middleware('permission:payments.manage')->group(function () {
+            Route::post('/packages/{package}/checkout', [PackageCheckoutController::class, 'store']);
+        });
 
         // Invoices: index/show visibility is further scoped per-participant inside
         // the controller (finance/admin see all, participant/guardian see own).
@@ -226,6 +236,17 @@ Route::prefix('v1')->group(function () {
             Route::post('/payments/{payment}/verify', [PaymentController::class, 'verify']);
         });
         Route::get('/invoices/{invoice}/receipt', [PaymentController::class, 'receipt']);
+
+        // Show is open to any authenticated user with view access (needed at
+        // checkout to display QRIS/bank details before paying).
+        Route::middleware('permission:payment-methods.view,payment-methods.manage')->group(function () {
+            Route::get('/payment-methods', [PaymentMethodController::class, 'index']);
+        });
+        Route::middleware('permission:payment-methods.manage')->group(function () {
+            Route::post('/payment-methods', [PaymentMethodController::class, 'store']);
+            Route::post('/payment-methods/{paymentMethod}', [PaymentMethodController::class, 'update']);
+            Route::delete('/payment-methods/{paymentMethod}', [PaymentMethodController::class, 'destroy']);
+        });
 
         Route::middleware('permission:evaluations.manage')->group(function () {
             Route::post('/evaluations', [EvaluationController::class, 'store']);

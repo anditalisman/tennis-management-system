@@ -26,6 +26,7 @@ export default async function PaketListPage({ searchParams }: { searchParams: Pr
   const session = await verifySession();
   const { page = "1" } = await searchParams;
   const canManage = hasRole(session.user.roles, ROLES.SUPER_ADMIN, ROLES.ADMINISTRATOR);
+  const canCheckout = hasRole(session.user.roles, ROLES.PARTICIPANT, ROLES.GUARDIAN);
 
   const packages = await serverApiPaginated<Package>(`/packages?page=${page}&per_page=15`);
 
@@ -59,7 +60,7 @@ export default async function PaketListPage({ searchParams }: { searchParams: Pr
                     <Th>Sesi</Th>
                     <Th>Harga</Th>
                     <Th>Status</Th>
-                    {canManage && <Th></Th>}
+                    {(canManage || canCheckout) && <Th></Th>}
                   </Tr>
                 </Thead>
                 <Tbody>
@@ -83,6 +84,15 @@ export default async function PaketListPage({ searchParams }: { searchParams: Pr
                               </button>
                             </form>
                           </div>
+                        </Td>
+                      )}
+                      {canCheckout && (
+                        <Td>
+                          {p.status === "active" && (
+                            <Link href={`/portal/paket/${p.id}/daftar`}>
+                              <Button size="sm">Daftar</Button>
+                            </Link>
+                          )}
                         </Td>
                       )}
                     </Tr>
