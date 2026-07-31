@@ -15,11 +15,17 @@ export const metadata = { title: "Paket" };
 
 type Package = {
   id: number;
-  program_id: number;
   name: string;
   session_count: number;
   price: number;
+  type: string;
   status: string;
+};
+
+const TYPE_LABELS: Record<string, string> = {
+  private: "Private",
+  kelompok: "Kelompok",
+  korporat: "Korporat",
 };
 
 export default async function PaketListPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
@@ -57,6 +63,7 @@ export default async function PaketListPage({ searchParams }: { searchParams: Pr
                 <Thead>
                   <Tr>
                     <Th>Nama</Th>
+                    <Th>Jenis</Th>
                     <Th>Sesi</Th>
                     <Th>Harga</Th>
                     <Th>Status</Th>
@@ -67,6 +74,7 @@ export default async function PaketListPage({ searchParams }: { searchParams: Pr
                   {packages.data.map((p) => (
                     <Tr key={p.id}>
                       <Td className="font-semibold">{p.name}</Td>
+                      <Td>{TYPE_LABELS[p.type] ?? p.type}</Td>
                       <Td>{p.session_count} sesi</Td>
                       <Td>{formatCurrency(p.price)}</Td>
                       <Td>

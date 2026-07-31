@@ -15,7 +15,7 @@ class PackageController extends Controller
     public function index(Request $request): JsonResponse
     {
         $packages = Package::query()
-            ->when($request->string('program_id')->isNotEmpty(), fn ($query) => $query->where('program_id', $request->integer('program_id')))
+            ->when($request->string('type')->isNotEmpty(), fn ($query) => $query->where('type', $request->string('type')))
             ->when($request->string('status')->isNotEmpty(), fn ($query) => $query->where('status', $request->string('status')))
             ->orderBy('name')
             ->paginate($request->integer('per_page', 15));

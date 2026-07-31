@@ -10,12 +10,11 @@ export type PackageFormState = { error?: string; fieldErrors?: Record<string, st
 
 function payloadFrom(formData: FormData) {
   return {
-    program_id: Number(formData.get("program_id")),
     name: String(formData.get("name") ?? ""),
     session_count: Number(formData.get("session_count")),
     validity_days: formData.get("validity_days") ? Number(formData.get("validity_days")) : undefined,
     price: Number(formData.get("price")),
-    type: String(formData.get("type") ?? "") || undefined,
+    type: String(formData.get("type") ?? ""),
     status: String(formData.get("status") ?? "") || undefined,
   };
 }

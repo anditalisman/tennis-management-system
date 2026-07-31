@@ -6,10 +6,8 @@ import { Input, Select } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Feedback";
 
-type Option = { id: number; name: string };
 type Package = {
   id: number;
-  program_id: number;
   name: string;
   session_count: number;
   validity_days: number;
@@ -18,7 +16,7 @@ type Package = {
   status?: string;
 };
 
-export function PackageForm({ pkg, programs }: { pkg?: Package; programs: Option[] }) {
+export function PackageForm({ pkg }: { pkg?: Package }) {
   const action = pkg ? updatePackageAction.bind(null, pkg.id) : createPackageAction;
   const [state, formAction, pending] = useActionState(action, undefined);
   const fieldErrors = state?.fieldErrors ?? {};
@@ -26,17 +24,12 @@ export function PackageForm({ pkg, programs }: { pkg?: Package; programs: Option
   return (
     <form action={formAction} className="flex flex-col gap-4">
       {state?.error && <Alert tone="crit">{state.error}</Alert>}
-      <Select label="Program" name="program_id" required defaultValue={pkg?.program_id ?? ""} error={fieldErrors.program_id}>
-        <option value="" disabled>
-          Pilih program
-        </option>
-        {programs.map((p) => (
-          <option key={p.id} value={p.id}>
-            {p.name}
-          </option>
-        ))}
-      </Select>
       <Input label="Nama paket" name="name" required defaultValue={pkg?.name} error={fieldErrors.name} />
+      <Select label="Jenis paket" name="type" required defaultValue={pkg?.type ?? "kelompok"} error={fieldErrors.type}>
+        <option value="private">Private</option>
+        <option value="kelompok">Kelompok (jam digabung dengan peserta lain)</option>
+        <option value="korporat">Korporat (instansi/perusahaan)</option>
+      </Select>
       <div className="grid grid-cols-2 gap-4">
         <Input
           label="Jumlah sesi"
