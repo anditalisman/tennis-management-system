@@ -16,7 +16,7 @@ export type Session = {
 };
 
 const COOKIE_NAME = SESSION_COOKIE_NAME;
-const MAX_AGE = 60 * 60 * 24 * 7; // 7 days — matches Sanctum tokens having no fixed expiry by default
+const MAX_AGE = 60 * 60 * 24; // 24 hours — matches Sanctum's token expiration in backend/config/sanctum.php
 
 export async function createSession(session: Session): Promise<void> {
   const store = await cookies();

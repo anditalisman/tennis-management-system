@@ -22,6 +22,10 @@ export default async function RegistrationSuccessPage({
       <p className="mt-3 text-sm text-(--color-ink-500)">
         Tim kami akan meninjau pendaftaran ini. Anda akan menerima notifikasi setelah pendaftaran diverifikasi.
       </p>
+      <p className="mt-3 text-sm text-(--color-ink-500)">
+        Kami juga mengirim email verifikasi ke akun login Anda — klik link di email tersebut dulu sebelum bisa masuk
+        ke portal.
+      </p>
       <Link href="/login" className="mt-6 inline-block">
         <Button>Masuk ke Portal</Button>
       </Link>

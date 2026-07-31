@@ -48,9 +48,13 @@ return [
     | considered expired. This will override any values set in the token's
     | "expires_at" attribute, but first-party sessions are not affected.
     |
+    | 1440 minutes (24 hours) — reduced from the framework default of no
+    | expiration so a stolen/leaked token doesn't stay valid indefinitely.
+    | Matches the frontend session cookie's maxAge in lib/session.ts.
+    |
     */
 
-    'expiration' => null,
+    'expiration' => env('SANCTUM_TOKEN_EXPIRATION', 1440),
 
     /*
     |--------------------------------------------------------------------------

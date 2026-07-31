@@ -106,4 +106,25 @@ class User extends Authenticatable
     {
         return $this->hasOne(Coach::class);
     }
+
+    public function hasVerifiedEmail(): bool
+    {
+        return $this->email_verified_at !== null;
+    }
+
+    public function markEmailAsVerified(): bool
+    {
+        return $this->forceFill(['email_verified_at' => now()])->save();
+    }
+
+    /**
+     * HMAC-signed, time-limited token for the emailed verification link —
+     * not routed through Laravel's own signed-route helpers since the link
+     * points at the separate Next.js frontend (verifikasi-email page),
+     * not a Laravel route the backend serves directly.
+     */
+    public static function emailVerificationSignature(int $id, int $expires): string
+    {
+        return hash_hmac('sha256', "{$id}|{$expires}", config('app.key'));
+    }
 }
