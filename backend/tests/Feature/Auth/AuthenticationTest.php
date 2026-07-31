@@ -19,7 +19,7 @@ class AuthenticationTest extends TestCase
         $this->seed(RolePermissionSeeder::class);
     }
 
-    public function test_a_user_can_register_and_receives_a_token(): void
+    public function test_a_user_can_register_but_must_verify_email_before_a_token_is_issued(): void
     {
         $response = $this->postJson('/api/v1/auth/register', [
             'name' => 'Budi Santoso',
@@ -32,9 +32,11 @@ class AuthenticationTest extends TestCase
             ->assertJsonPath('data.user.email', 'budi@example.com')
             ->assertJsonPath('data.user.roles.0', Role::PARTICIPANT)
             ->assertJsonPath('data.user.locale', 'id')
-            ->assertJsonStructure(['data' => ['user' => ['id', 'name', 'email'], 'token']]);
+            ->assertJsonStructure(['data' => ['user' => ['id', 'name', 'email'], 'message']])
+            ->assertJsonMissingPath('data.token');
 
-        $this->assertDatabaseHas('users', ['email' => 'budi@example.com']);
+        $this->assertDatabaseHas('users', ['email' => 'budi@example.com', 'email_verified_at' => null]);
+        $this->assertDatabaseHas('notifications', ['user_id' => User::query()->where('email', 'budi@example.com')->value('id'), 'channel' => 'email']);
     }
 
     public function test_registration_requires_valid_unique_email_and_matching_password(): void

@@ -26,10 +26,12 @@ export async function loginAction(_prevState: FormState, formData: FormData): Pr
     });
   } catch (error) {
     if (error instanceof ApiError) {
-      return {
-        error: error.status === 422 ? "Email atau kata sandi salah, atau akun tidak aktif." : error.message,
-        fieldErrors: error.fieldErrors(),
-      };
+      const fieldErrors = error.fieldErrors();
+      // /auth/login only ever fails with an `email`-keyed message (wrong
+      // credentials, inactive account, or unverified email) — surface it
+      // directly instead of a generic string so "belum diverifikasi" isn't
+      // flattened into a misleading "wrong password" message.
+      return { error: fieldErrors.email ?? error.message, fieldErrors };
     }
     return { error: "Tidak dapat terhubung ke server. Coba lagi." };
   }
@@ -37,6 +39,25 @@ export async function loginAction(_prevState: FormState, formData: FormData): Pr
   await createSession({ token: response.token, user: response.user });
 
   redirect(next && next.startsWith("/portal") ? next : "/portal/dashboard");
+}
+
+export type ResendState = { message?: string; error?: string } | undefined;
+
+export async function resendVerificationAction(_prevState: ResendState, formData: FormData): Promise<ResendState> {
+  const email = String(formData.get("email") ?? "").trim();
+  if (!email) {
+    return { error: "Masukkan email Anda terlebih dahulu." };
+  }
+
+  try {
+    const result = await serverApi<{ message: string }>("/auth/verify-email/resend", {
+      method: "POST",
+      body: { email },
+    });
+    return { message: result.message };
+  } catch (error) {
+    return { error: error instanceof ApiError ? error.message : "Tidak dapat terhubung ke server. Coba lagi." };
+  }
 }
 
 export async function logoutAction(): Promise<void> {

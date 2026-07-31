@@ -8,6 +8,7 @@ use App\Http\Requests\Auth\RegisterRequest;
 use App\Http\Resources\UserResource;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\EmailVerificationMailer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -15,7 +16,7 @@ use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
-    public function register(RegisterRequest $request): JsonResponse
+    public function register(RegisterRequest $request, EmailVerificationMailer $mailer): JsonResponse
     {
         $user = User::query()->create([
             'name' => $request->validated('name'),
@@ -31,12 +32,15 @@ class AuthController extends Controller
             $user->roles()->attach($participantRole);
         }
 
-        $token = $user->createToken($request->userAgent() ?? 'register')->plainTextToken;
+        // No token issued here — the account can't authenticate until the
+        // emailed link is clicked (see login()'s hasVerifiedEmail check),
+        // so handing back a working token would just bypass that gate.
+        $mailer->send($user);
 
         return response()->json([
             'data' => [
                 'user' => new UserResource($user->load('roles')),
-                'token' => $token,
+                'message' => 'Pendaftaran berhasil. Cek email Anda untuk link verifikasi sebelum bisa masuk.',
             ],
         ], 201);
     }
@@ -54,6 +58,12 @@ class AuthController extends Controller
         if ($user->status !== User::STATUS_ACTIVE) {
             throw ValidationException::withMessages([
                 'email' => ['Akun ini tidak aktif. Hubungi administrator.'],
+            ]);
+        }
+
+        if (! $user->hasVerifiedEmail()) {
+            throw ValidationException::withMessages([
+                'email' => ['Email belum diverifikasi. Cek email Anda untuk link verifikasi, atau minta link baru.'],
             ]);
         }
 

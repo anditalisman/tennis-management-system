@@ -39,4 +39,8 @@ return [
         'webhook_secret' => env('PAYMENT_GATEWAY_WEBHOOK_SECRET'),
     ],
 
+    'spa' => [
+        'url' => env('SPA_URL', 'http://localhost:3000'),
+    ],
+
 ];

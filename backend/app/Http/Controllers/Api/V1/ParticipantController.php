@@ -15,6 +15,7 @@ use App\Models\Participant;
 use App\Models\Referral;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\EmailVerificationMailer;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -24,6 +25,8 @@ use Illuminate\Validation\ValidationException;
 class ParticipantController extends Controller
 {
     use ScopesToBranch;
+
+    public function __construct(private readonly EmailVerificationMailer $verificationMailer) {}
 
     public function index(Request $request): JsonResponse
     {
@@ -51,10 +54,17 @@ class ParticipantController extends Controller
 
     public function store(StoreParticipantRequest $request): JsonResponse
     {
-        $participant = DB::transaction(function () use ($request) {
+        // A brand new login account (guardian or self-registering adult)
+        // needs a verification email, but that's sent after the transaction
+        // commits below — not for an email address that turned out to
+        // already belong to an existing account, and not from inside the
+        // transaction (queuing the job before the row is guaranteed
+        // committed).
+        [$participant, $newUserToVerify] = DB::transaction(function () use ($request) {
             $authUser = auth('sanctum')->user();
             $guardian = null;
             $userId = null;
+            $newUserToVerify = null;
             $needsGuardian = in_array($request->validated('age_category'), Participant::GUARDIAN_REQUIRED_CATEGORIES, true);
 
             if ($authUser) {
@@ -78,10 +88,10 @@ class ParticipantController extends Controller
                         'password' => $guardianData['password'],
                         'status' => User::STATUS_ACTIVE,
                         'locale' => app()->getLocale(),
-                        'email_verified_at' => now(),
                     ]);
                     $guardianRole = Role::query()->where('slug', Role::GUARDIAN)->firstOrFail();
                     $guardianUser->roles()->attach($guardianRole);
+                    $newUserToVerify = $guardianUser;
 
                     $guardian = Guardian::query()->create([
                         'user_id' => $guardianUser->id,
@@ -107,10 +117,10 @@ class ParticipantController extends Controller
                         'password' => $request->validated('password'),
                         'status' => User::STATUS_ACTIVE,
                         'locale' => app()->getLocale(),
-                        'email_verified_at' => now(),
                     ]);
                     $participantRole = Role::query()->where('slug', Role::PARTICIPANT)->firstOrFail();
                     $participantUser->roles()->attach($participantRole);
+                    $newUserToVerify = $participantUser;
                 }
 
                 $userId = $participantUser->id;
@@ -143,8 +153,12 @@ class ParticipantController extends Controller
                     ?->update(['referred_participant_id' => $participant->id, 'reward_status' => Referral::STATUS_REDEEMED]);
             }
 
-            return $participant;
+            return [$participant, $newUserToVerify];
         });
+
+        if ($newUserToVerify) {
+            $this->verificationMailer->send($newUserToVerify);
+        }
 
         return response()->json(['data' => new ParticipantResource($participant->load('guardians.user', 'user'))], 201);
     }
