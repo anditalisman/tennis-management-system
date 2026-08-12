@@ -272,6 +272,14 @@ networks:
     ipam:
       config:
         - subnet: 10.40.1.80/28
+  # No service here joins "default" — Dokploy's own deploy wrapper still creates a
+  # "<project>_default" network alongside this one regardless (for its own routing), and that
+  # network was hitting the same exhausted-pool problem. Declaring it here (even unused) is
+  # enough for Compose to create it with this pinned subnet instead of auto-allocating one.
+  default:
+    ipam:
+      config:
+        - subnet: 10.40.3.48/28
 
 volumes:
   mysql_data:
