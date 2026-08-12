@@ -263,8 +263,15 @@ services:
     restart: unless-stopped
 
 networks:
+  # Explicit subnet: the host's default Docker address pools (172.16.0.0/12 and 192.168.0.0/16)
+  # are fully exhausted by the many other apps on this Dokploy host, so a new network creation
+  # fails with "all predefined address pools have been fully subnetted" unless it's pinned
+  # outside those ranges. /28 is plenty for this stack's 7 services.
   ztcms:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 10.40.1.80/28
 
 volumes:
   mysql_data:
