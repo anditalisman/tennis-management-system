@@ -23,13 +23,13 @@ export function MobileNav({ items }: { items: { href: string; label: string }[] 
           <ul className="flex flex-col gap-3 text-sm font-medium text-(--color-ink-700)">
             {items.map((item) => (
               <li key={item.href}>
-                <Link href={item.href} onClick={() => setOpen(false)} className="hover:text-(--color-court-600)">
+                <Link href={item.href} onClick={() => setOpen(false)} className="hover:text-(--color-court-500)">
                   {item.label}
                 </Link>
               </li>
             ))}
             <li className="mt-1 border-t border-(--color-ink-900)/10 pt-3 sm:hidden">
-              <Link href="/login" onClick={() => setOpen(false)} className="hover:text-(--color-court-600)">
+              <Link href="/login" onClick={() => setOpen(false)} className="hover:text-(--color-court-500)">
                 Masuk
               </Link>
             </li>

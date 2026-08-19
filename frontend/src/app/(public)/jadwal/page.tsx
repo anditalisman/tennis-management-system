@@ -1,6 +1,7 @@
 import { serverApi } from "@/lib/server-api";
 import { Card, CardBody } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/Feedback";
+import { PageHeader } from "../PageHeader";
 import { formatDate, formatTime } from "@/lib/format";
 
 export const metadata = { title: "Jadwal Latihan" };
@@ -12,7 +13,6 @@ type Schedule = {
   end_time: string;
   class_name: string | null;
   program_name: string | null;
-  branch_name: string | null;
   coach_name: string | null;
   court_name: string | null;
 };
@@ -27,13 +27,11 @@ export default async function JadwalPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-16">
-      <span className="text-xs font-semibold uppercase tracking-widest text-(--color-court-600)">Jadwal</span>
-      <h1 className="mt-2 font-display text-3xl font-extrabold text-(--color-ink-900) sm:text-4xl">
-        Jadwal Latihan 14 Hari ke Depan
-      </h1>
-      <p className="mt-4 max-w-2xl text-(--color-ink-500)">
-        Jadwal berikut adalah sesi kelas reguler yang terjadwal. Untuk bergabung, silakan daftar terlebih dahulu.
-      </p>
+      <PageHeader
+        eyebrow="Jadwal"
+        title="Jadwal Latihan 14 Hari ke Depan"
+        description="Jadwal berikut adalah sesi kelas reguler yang terjadwal. Untuk bergabung, silakan daftar terlebih dahulu."
+      />
 
       {Object.keys(grouped).length === 0 ? (
         <div className="mt-10">
@@ -52,14 +50,12 @@ export default async function JadwalPage() {
                     <CardBody className="flex items-start justify-between gap-4">
                       <div>
                         <p className="font-semibold text-(--color-ink-900)">{item.class_name}</p>
-                        <p className="mt-1 text-sm text-(--color-ink-500)">
-                          {item.program_name} · {item.branch_name}
-                        </p>
+                        {item.program_name && <p className="mt-1 text-sm text-(--color-ink-500)">{item.program_name}</p>}
                         <p className="mt-1 text-sm text-(--color-ink-500)">
                           Pelatih: {item.coach_name ?? "-"} · {item.court_name ?? "-"}
                         </p>
                       </div>
-                      <p className="shrink-0 text-sm font-semibold text-(--color-court-700)">
+                      <p className="shrink-0 text-sm font-semibold text-(--color-court-500)">
                         {formatTime(item.start_time)}–{formatTime(item.end_time)}
                       </p>
                     </CardBody>

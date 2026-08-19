@@ -1,3 +1,5 @@
+import { PageHeader } from "../PageHeader";
+
 export const metadata = { title: "FAQ" };
 
 const FAQS = [
@@ -7,7 +9,7 @@ const FAQS = [
   },
   {
     q: "Apakah bisa mencoba kelas sebelum mendaftar paket?",
-    a: "Bisa. Silakan hubungi cabang terdekat untuk menjadwalkan sesi trial sebelum membeli paket.",
+    a: "Bisa. Silakan hubungi kami untuk menjadwalkan sesi trial sebelum membeli paket.",
   },
   {
     q: "Bagaimana cara pembayaran paket latihan?",
@@ -15,7 +17,7 @@ const FAQS = [
   },
   {
     q: "Apa yang terjadi jika sesi latihan terlewat?",
-    a: "Sesi yang tidak dapat dihadiri dapat dikoordinasikan dengan pelatih untuk penjadwalan ulang, mengikuti kebijakan masing-masing cabang.",
+    a: "Sesi yang tidak dapat dihadiri dapat dikoordinasikan dengan pelatih untuk penjadwalan ulang, mengikuti kebijakan yang berlaku.",
   },
   {
     q: "Apakah paket latihan memiliki masa berlaku?",
@@ -30,10 +32,7 @@ const FAQS = [
 export default function FaqPage() {
   return (
     <div className="mx-auto max-w-3xl px-6 py-16">
-      <span className="text-xs font-semibold uppercase tracking-widest text-(--color-court-600)">FAQ</span>
-      <h1 className="mt-2 font-display text-3xl font-extrabold text-(--color-ink-900) sm:text-4xl">
-        Pertanyaan yang Sering Diajukan
-      </h1>
+      <PageHeader eyebrow="FAQ" title="Pertanyaan yang Sering Diajukan" />
 
       <div className="mt-10 flex flex-col divide-y divide-(--color-ink-900)/10 rounded-2xl border border-(--color-ink-900)/10 bg-(--color-paper-raised)">
         {FAQS.map((item) => (

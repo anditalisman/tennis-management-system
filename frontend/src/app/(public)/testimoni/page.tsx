@@ -1,4 +1,5 @@
 import { Card, CardBody } from "@/components/ui/Card";
+import { PageHeader } from "../PageHeader";
 
 export const metadata = { title: "Testimoni" };
 
@@ -26,19 +27,17 @@ const TESTIMONIALS = [
 export default function TestimoniPage() {
   return (
     <div className="mx-auto max-w-6xl px-6 py-16">
-      <span className="text-xs font-semibold uppercase tracking-widest text-(--color-court-600)">Testimoni</span>
-      <h1 className="mt-2 font-display text-3xl font-extrabold text-(--color-ink-900) sm:text-4xl">
-        Apa Kata Mereka
-      </h1>
-      <p className="mt-4 max-w-2xl text-(--color-ink-500)">
-        Pengalaman peserta dan orang tua yang telah bergabung di Zul Tennis Clinic.
-      </p>
+      <PageHeader
+        eyebrow="Testimoni"
+        title="Apa Kata Mereka"
+        description="Pengalaman peserta dan orang tua yang telah bergabung di Zul Tennis Clinic."
+      />
 
       <div className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {TESTIMONIALS.map((t) => (
-          <Card key={t.name}>
+          <Card key={t.name} className="transition-shadow hover:shadow-md">
             <CardBody>
-              <p className="text-(--color-court-600)">&ldquo;</p>
+              <p className="text-(--color-court-500)">&ldquo;</p>
               <p className="text-sm text-(--color-ink-700)">{t.quote}</p>
               <p className="mt-4 font-semibold text-(--color-ink-900)">{t.name}</p>
               <p className="text-xs text-(--color-ink-500)">{t.role}</p>
