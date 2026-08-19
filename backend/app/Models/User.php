@@ -43,6 +43,7 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'whatsapp_verified_at' => 'datetime',
             'last_login_at' => 'datetime',
             'password' => 'hashed',
         ];
@@ -117,14 +118,37 @@ class User extends Authenticatable
         return $this->forceFill(['email_verified_at' => now()])->save();
     }
 
-    /**
-     * HMAC-signed, time-limited token for the emailed verification link —
-     * not routed through Laravel's own signed-route helpers since the link
-     * points at the separate Next.js frontend (verifikasi-email page),
-     * not a Laravel route the backend serves directly.
-     */
-    public static function emailVerificationSignature(int $id, int $expires): string
+    public function hasVerifiedWhatsapp(): bool
     {
-        return hash_hmac('sha256', "{$id}|{$expires}", config('app.key'));
+        return $this->whatsapp_verified_at !== null;
+    }
+
+    public function markWhatsappAsVerified(): bool
+    {
+        return $this->forceFill(['whatsapp_verified_at' => now()])->save();
+    }
+
+    /**
+     * Converts a stored number (+62..., 62..., or local 08...) into the WA
+     * JID an OpenWA gateway's send-text endpoint requires
+     * (`<countrycode+number>@c.us`, no "+", no leading 0).
+     */
+    public static function toWhatsappChatId(?string $number): ?string
+    {
+        if (! $number) {
+            return null;
+        }
+
+        $digits = preg_replace('/\D/', '', $number);
+
+        if (! $digits) {
+            return null;
+        }
+
+        if (str_starts_with($digits, '0')) {
+            $digits = '62'.substr($digits, 1);
+        }
+
+        return $digits.'@c.us';
     }
 }

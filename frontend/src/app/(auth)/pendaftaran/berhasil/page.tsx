@@ -6,9 +6,10 @@ export const metadata = { title: "Pendaftaran Berhasil" };
 export default async function RegistrationSuccessPage({
   searchParams,
 }: {
-  searchParams: Promise<{ no?: string }>;
+  searchParams: Promise<{ no?: string; email?: string }>;
 }) {
-  const { no } = await searchParams;
+  const { no, email } = await searchParams;
+  const verifyHref = `/verifikasi-whatsapp${email ? `?email=${encodeURIComponent(email)}` : ""}`;
 
   return (
     <div className="text-center">
@@ -23,11 +24,11 @@ export default async function RegistrationSuccessPage({
         Tim kami akan meninjau pendaftaran ini. Anda akan menerima notifikasi setelah pendaftaran diverifikasi.
       </p>
       <p className="mt-3 text-sm text-(--color-ink-500)">
-        Kami juga mengirim email verifikasi ke akun login Anda — klik link di email tersebut dulu sebelum bisa masuk
-        ke portal.
+        Kami juga mengirim kode verifikasi ke WhatsApp akun login Anda — masukkan kode tersebut dulu sebelum bisa
+        masuk ke portal.
       </p>
-      <Link href="/login" className="mt-6 inline-block">
-        <Button>Masuk ke Portal</Button>
+      <Link href={verifyHref} className="mt-6 inline-block">
+        <Button>Verifikasi WhatsApp</Button>
       </Link>
     </div>
   );

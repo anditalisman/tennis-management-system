@@ -8,7 +8,6 @@ use App\Http\Controllers\Api\V1\CoachAttendanceController;
 use App\Http\Controllers\Api\V1\CoachController;
 use App\Http\Controllers\Api\V1\CourtController;
 use App\Http\Controllers\Api\V1\DashboardController;
-use App\Http\Controllers\Api\V1\EmailVerificationController;
 use App\Http\Controllers\Api\V1\EmergencyContactController;
 use App\Http\Controllers\Api\V1\EvaluationController;
 use App\Http\Controllers\Api\V1\GalleryController;
@@ -34,13 +33,14 @@ use App\Http\Controllers\Api\V1\TrainingScheduleController;
 use App\Http\Controllers\Api\V1\TrialClassController;
 use App\Http\Controllers\Api\V1\UserController;
 use App\Http\Controllers\Api\V1\VoucherController;
+use App\Http\Controllers\Api\V1\WhatsappVerificationController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
     Route::post('/auth/register', [AuthController::class, 'register'])->middleware('throttle:auth');
     Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:auth');
-    Route::post('/auth/verify-email', [EmailVerificationController::class, 'verify'])->middleware('throttle:auth');
-    Route::post('/auth/verify-email/resend', [EmailVerificationController::class, 'resend'])->middleware('throttle:auth');
+    Route::post('/auth/verify-whatsapp', [WhatsappVerificationController::class, 'verify'])->middleware('throttle:auth');
+    Route::post('/auth/verify-whatsapp/resend', [WhatsappVerificationController::class, 'resend'])->middleware('throttle:auth');
 
     // Public registration: works for both guests (with guardian payload) and
     // authenticated adult participants (self-registration) — see StoreParticipantRequest.

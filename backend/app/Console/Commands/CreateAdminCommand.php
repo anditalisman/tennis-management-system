@@ -62,6 +62,7 @@ class CreateAdminCommand extends Command
                 'name' => $name,
                 'password' => Hash::make($password),
                 'email_verified_at' => now(),
+                'whatsapp_verified_at' => now(),
                 'status' => User::STATUS_ACTIVE,
                 'branch_id' => Branch::query()->value('id'),
             ],

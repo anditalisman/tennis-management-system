@@ -2,14 +2,14 @@
 
 import { useActionState } from "react";
 import Link from "next/link";
-import { loginAction, resendVerificationAction } from "@/lib/actions/auth";
+import { loginAction, resendWhatsappVerificationAction } from "@/lib/actions/auth";
 import { Input } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Feedback";
 
 export function LoginForm({ next }: { next?: string }) {
   const [state, formAction, pending] = useActionState(loginAction, undefined);
-  const [resendState, resendFormAction, resendPending] = useActionState(resendVerificationAction, undefined);
+  const [resendState, resendFormAction, resendPending] = useActionState(resendWhatsappVerificationAction, undefined);
   const isUnverified = state?.error?.includes("belum diverifikasi") ?? false;
 
   return (
@@ -37,7 +37,7 @@ export function LoginForm({ next }: { next?: string }) {
             <p className="text-sm text-(--color-good)">{resendState.message}</p>
           ) : (
             <>
-              <p className="text-sm text-(--color-ink-500)">Tidak menerima email verifikasi?</p>
+              <p className="text-sm text-(--color-ink-500)">Tidak menerima kode verifikasi WhatsApp?</p>
               <form action={resendFormAction} className="mt-2 flex flex-wrap items-end gap-2">
                 <div className="min-w-0 flex-1">
                   <Input label="Email" name="email" type="email" required />

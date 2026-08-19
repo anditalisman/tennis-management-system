@@ -4,7 +4,7 @@ namespace App\Http\Requests\Auth;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class ResendVerificationRequest extends FormRequest
+class ResendWhatsappVerificationRequest extends FormRequest
 {
     public function authorize(): bool
     {

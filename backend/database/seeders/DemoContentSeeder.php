@@ -59,6 +59,7 @@ class DemoContentSeeder extends Seeder
                     'branch_id' => $account['branch']->id,
                     'password' => Hash::make('password'),
                     'email_verified_at' => now(),
+                    'whatsapp_verified_at' => now(),
                     'status' => User::STATUS_ACTIVE,
                 ],
             );

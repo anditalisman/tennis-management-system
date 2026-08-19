@@ -15,7 +15,7 @@ use App\Models\Participant;
 use App\Models\Referral;
 use App\Models\Role;
 use App\Models\User;
-use App\Services\EmailVerificationMailer;
+use App\Services\WhatsappOtpService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -26,7 +26,7 @@ class ParticipantController extends Controller
 {
     use ScopesToBranch;
 
-    public function __construct(private readonly EmailVerificationMailer $verificationMailer) {}
+    public function __construct(private readonly WhatsappOtpService $otpService) {}
 
     public function index(Request $request): JsonResponse
     {
@@ -55,8 +55,8 @@ class ParticipantController extends Controller
     public function store(StoreParticipantRequest $request): JsonResponse
     {
         // A brand new login account (guardian or self-registering adult)
-        // needs a verification email, but that's sent after the transaction
-        // commits below — not for an email address that turned out to
+        // needs a WhatsApp OTP, but that's sent after the transaction
+        // commits below — not for a phone number that turned out to
         // already belong to an existing account, and not from inside the
         // transaction (queuing the job before the row is guaranteed
         // committed).
@@ -157,7 +157,7 @@ class ParticipantController extends Controller
         });
 
         if ($newUserToVerify) {
-            $this->verificationMailer->send($newUserToVerify);
+            $this->otpService->generateAndSend($newUserToVerify);
         }
 
         return response()->json(['data' => new ParticipantResource($participant->load('guardians.user', 'user'))], 201);

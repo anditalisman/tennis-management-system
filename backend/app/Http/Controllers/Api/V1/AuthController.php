@@ -8,7 +8,7 @@ use App\Http\Requests\Auth\RegisterRequest;
 use App\Http\Resources\UserResource;
 use App\Models\Role;
 use App\Models\User;
-use App\Services\EmailVerificationMailer;
+use App\Services\WhatsappOtpService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -16,7 +16,7 @@ use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
-    public function register(RegisterRequest $request, EmailVerificationMailer $mailer): JsonResponse
+    public function register(RegisterRequest $request, WhatsappOtpService $otp): JsonResponse
     {
         $user = User::query()->create([
             'name' => $request->validated('name'),
@@ -33,14 +33,14 @@ class AuthController extends Controller
         }
 
         // No token issued here — the account can't authenticate until the
-        // emailed link is clicked (see login()'s hasVerifiedEmail check),
+        // WhatsApp OTP is verified (see login()'s hasVerifiedWhatsapp check),
         // so handing back a working token would just bypass that gate.
-        $mailer->send($user);
+        $otp->generateAndSend($user);
 
         return response()->json([
             'data' => [
                 'user' => new UserResource($user->load('roles')),
-                'message' => 'Pendaftaran berhasil. Cek email Anda untuk link verifikasi sebelum bisa masuk.',
+                'message' => 'Pendaftaran berhasil. Cek WhatsApp Anda untuk kode verifikasi sebelum bisa masuk.',
             ],
         ], 201);
     }
@@ -61,9 +61,9 @@ class AuthController extends Controller
             ]);
         }
 
-        if (! $user->hasVerifiedEmail()) {
+        if (! $user->hasVerifiedWhatsapp()) {
             throw ValidationException::withMessages([
-                'email' => ['Email belum diverifikasi. Cek email Anda untuk link verifikasi, atau minta link baru.'],
+                'email' => ['Nomor WhatsApp belum diverifikasi. Cek WhatsApp Anda untuk kode verifikasi, atau minta kode baru.'],
             ]);
         }
 

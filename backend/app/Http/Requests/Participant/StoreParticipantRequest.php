@@ -30,7 +30,12 @@ class StoreParticipantRequest extends FormRequest
             'age_category' => ['required', Rule::in(Participant::AGE_CATEGORIES)],
             'gender' => ['nullable', Rule::in(['male', 'female'])],
             'skill_level' => ['nullable', Rule::in(['beginner', 'intermediate', 'advanced'])],
-            'phone' => ['nullable', 'string', 'max:30'],
+            // Required in the same case as "password" below — a new adult
+            // login account needs a WhatsApp-reachable number for its OTP.
+            'phone' => [
+                Rule::requiredIf(! $isSelfRegistration && ! $isMinorOrPrestasi),
+                'string', 'max:30',
+            ],
             'address' => ['nullable', 'string'],
             'policy_accepted' => ['required', 'accepted'],
             'referral_code' => ['nullable', 'string', 'exists:referrals,code'],

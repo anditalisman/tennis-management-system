@@ -19,11 +19,12 @@ class AuthenticationTest extends TestCase
         $this->seed(RolePermissionSeeder::class);
     }
 
-    public function test_a_user_can_register_but_must_verify_email_before_a_token_is_issued(): void
+    public function test_a_user_can_register_but_must_verify_whatsapp_before_a_token_is_issued(): void
     {
         $response = $this->postJson('/api/v1/auth/register', [
             'name' => 'Budi Santoso',
             'email' => 'budi@example.com',
+            'phone' => '081234567890',
             'password' => 'Password123',
             'password_confirmation' => 'Password123',
         ]);
@@ -35,11 +36,11 @@ class AuthenticationTest extends TestCase
             ->assertJsonStructure(['data' => ['user' => ['id', 'name', 'email'], 'message']])
             ->assertJsonMissingPath('data.token');
 
-        $this->assertDatabaseHas('users', ['email' => 'budi@example.com', 'email_verified_at' => null]);
-        $this->assertDatabaseHas('notifications', ['user_id' => User::query()->where('email', 'budi@example.com')->value('id'), 'channel' => 'email']);
+        $this->assertDatabaseHas('users', ['email' => 'budi@example.com', 'whatsapp_verified_at' => null]);
+        $this->assertDatabaseHas('notifications', ['user_id' => User::query()->where('email', 'budi@example.com')->value('id'), 'channel' => 'whatsapp']);
     }
 
-    public function test_registration_requires_valid_unique_email_and_matching_password(): void
+    public function test_registration_requires_valid_unique_email_phone_and_matching_password(): void
     {
         User::factory()->create(['email' => 'taken@example.com']);
 
@@ -51,7 +52,7 @@ class AuthenticationTest extends TestCase
         ]);
 
         $response->assertUnprocessable()
-            ->assertJsonValidationErrors(['email', 'password']);
+            ->assertJsonValidationErrors(['email', 'phone', 'password']);
     }
 
     public function test_a_user_can_login_with_correct_credentials(): void

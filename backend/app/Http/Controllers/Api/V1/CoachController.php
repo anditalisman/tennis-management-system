@@ -46,6 +46,7 @@ class CoachController extends Controller
             'status' => User::STATUS_ACTIVE,
             'locale' => app()->getLocale(),
             'email_verified_at' => now(),
+            'whatsapp_verified_at' => now(),
         ]);
 
         $coachRole = Role::query()->where('slug', Role::COACH)->firstOrFail();

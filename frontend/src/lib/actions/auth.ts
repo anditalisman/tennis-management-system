@@ -43,14 +43,14 @@ export async function loginAction(_prevState: FormState, formData: FormData): Pr
 
 export type ResendState = { message?: string; error?: string } | undefined;
 
-export async function resendVerificationAction(_prevState: ResendState, formData: FormData): Promise<ResendState> {
+export async function resendWhatsappVerificationAction(_prevState: ResendState, formData: FormData): Promise<ResendState> {
   const email = String(formData.get("email") ?? "").trim();
   if (!email) {
     return { error: "Masukkan email Anda terlebih dahulu." };
   }
 
   try {
-    const result = await serverApi<{ message: string }>("/auth/verify-email/resend", {
+    const result = await serverApi<{ message: string }>("/auth/verify-whatsapp/resend", {
       method: "POST",
       body: { email },
     });
@@ -58,6 +58,21 @@ export async function resendVerificationAction(_prevState: ResendState, formData
   } catch (error) {
     return { error: error instanceof ApiError ? error.message : "Tidak dapat terhubung ke server. Coba lagi." };
   }
+}
+
+export type VerifyWhatsappState = { error?: string; success?: boolean } | undefined;
+
+export async function verifyWhatsappAction(_prevState: VerifyWhatsappState, formData: FormData): Promise<VerifyWhatsappState> {
+  const email = String(formData.get("email") ?? "").trim();
+  const code = String(formData.get("code") ?? "").trim();
+
+  try {
+    await serverApi("/auth/verify-whatsapp", { method: "POST", body: { email, code } });
+  } catch (error) {
+    return { error: error instanceof ApiError ? error.message : "Tidak dapat terhubung ke server. Coba lagi." };
+  }
+
+  return { success: true };
 }
 
 export async function logoutAction(): Promise<void> {

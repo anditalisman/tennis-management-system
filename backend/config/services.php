@@ -43,4 +43,20 @@ return [
         'url' => env('SPA_URL', 'http://localhost:3000'),
     ],
 
+    'whatsapp' => [
+        // Selects how SendNotificationJob delivers the "whatsapp" channel —
+        // "log" (default, no real send — payload just lands in
+        // notification_logs) or "openwa" to send through a self-hosted
+        // OpenWA gateway. Set to "openwa" only once OPENWA_* below and a
+        // paired WhatsApp session on that gateway are ready.
+        'provider' => env('WHATSAPP_PROVIDER', 'log'),
+    ],
+
+    'openwa' => [
+        'base_url' => env('OPENWA_BASE_URL'),
+        'api_key' => env('OPENWA_API_KEY'),
+        'session_id' => env('OPENWA_SESSION_ID'),
+        'timeout' => env('OPENWA_TIMEOUT', 15),
+    ],
+
 ];

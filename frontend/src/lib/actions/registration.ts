@@ -51,5 +51,11 @@ export async function registerParticipantAction(
     return { error: "Tidak dapat terhubung ke server. Coba lagi." };
   }
 
-  redirect(`/pendaftaran/berhasil?no=${encodeURIComponent(response.registration_no)}`);
+  // The account that needs WhatsApp OTP verification is the guardian's for a
+  // minor/prestasi registration, or the participant's own for an adult.
+  const verifyEmail = needsGuardian ? String(formData.get("guardian_email") ?? "") : String(formData.get("email") ?? "");
+
+  redirect(
+    `/pendaftaran/berhasil?no=${encodeURIComponent(response.registration_no)}&email=${encodeURIComponent(verifyEmail)}`,
+  );
 }

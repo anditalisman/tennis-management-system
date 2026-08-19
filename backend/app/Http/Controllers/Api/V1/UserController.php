@@ -51,6 +51,7 @@ class UserController extends Controller
             'status' => $request->validated('status') ?: User::STATUS_ACTIVE,
             'locale' => app()->getLocale(),
             'email_verified_at' => now(),
+            'whatsapp_verified_at' => now(),
         ]);
 
         $roleIds = Role::query()->whereIn('slug', $request->validated('roles'))->pluck('id');
