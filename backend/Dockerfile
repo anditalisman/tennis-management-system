@@ -1,4 +1,4 @@
-FROM php:8.4-fpm-alpine
+FROM php:8.4-fpm-alpine AS app
 
 RUN apk add --no-cache --virtual .build-deps \
         $PHPIZE_DEPS \
@@ -34,3 +34,18 @@ USER www
 EXPOSE 9000
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD ["php-fpm"]
+
+# ============================================================
+# Nginx image - bakes the webroot in at build time so nginx never depends on
+# the "app" stage's live code bind-mount (which production doesn't even use
+# anymore, see docker-compose.yml, but this stage still shouldn't need one).
+# Reuses "app"'s already composer-installed /var/www/html rather than
+# duplicating the COPY + composer steps.
+# ============================================================
+FROM nginx:1.27-alpine AS nginx
+
+COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
+COPY --from=app /var/www/html /var/www/html
+
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]

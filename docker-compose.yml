@@ -9,6 +9,7 @@ x-backend-image: &backend-image
   <<: *dns
   build:
     context: ./backend
+    target: app
 
   environment:
     TZ: ${TZ:-Asia/Makassar}
@@ -74,8 +75,18 @@ x-backend-image: &backend-image
     OPENWA_SESSION_ID: ${OPENWA_SESSION_ID:-}
     OPENWA_TIMEOUT: ${OPENWA_TIMEOUT:-15}
 
+  # No source bind mount here (production bakes the code into the image at
+  # build time — see backend/Dockerfile's `COPY . .`). A bind mount of the
+  # live checkout used to sit here, but Dokploy's redeploy deletes and
+  # re-clones the checkout directory rather than `git pull` in place, and a
+  # bind mount follows the directory's old *inode*, not its path — so an
+  # already-running container's mount namespace goes stale, and Docker's
+  # exec-based healthcheck starts failing with "possible container breakout
+  # detected" (2026-08-19 incident; same root cause hit kpi-web on
+  # 2026-08-18, see its docker-compose.yml comment). For local dev with
+  # live-reload, add `./backend:/var/www/html` back via
+  # docker-compose.override.yml instead — never in this base file.
   volumes:
-    - ./backend:/var/www/html
     - backend_vendor:/var/www/html/vendor
     - backend_storage:/var/www/html/storage
     - backend_bootstrap_cache:/var/www/html/bootstrap/cache
@@ -113,14 +124,12 @@ services:
 
   nginx:
     <<: *dns
-    image: nginx:1.27-alpine
+    build:
+      context: ./backend
+      target: nginx
 
     environment:
       TZ: ${TZ:-Asia/Makassar}
-
-    volumes:
-      - ./backend:/var/www/html:ro
-      - ./infra/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
 
     depends_on:
       app:
