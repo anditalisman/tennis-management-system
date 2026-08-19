@@ -61,12 +61,17 @@ class CreateAdminCommand extends Command
             [
                 'name' => $name,
                 'password' => Hash::make($password),
-                'email_verified_at' => now(),
-                'whatsapp_verified_at' => now(),
                 'status' => User::STATUS_ACTIVE,
                 'branch_id' => Branch::query()->value('id'),
             ],
         );
+
+        // email_verified_at/whatsapp_verified_at aren't in User's #[Fillable(...)]
+        // list (mass-assignment guards them everywhere else in the app), so
+        // updateOrCreate() above silently drops them — forceFill bypasses that
+        // guard deliberately, here only, for the one command meant to bootstrap
+        // a trusted account without going through the normal verification flows.
+        $user->forceFill(['email_verified_at' => now(), 'whatsapp_verified_at' => now()])->save();
 
         $user->roles()->syncWithoutDetaching([$role->id]);
 
