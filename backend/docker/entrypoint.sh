@@ -27,4 +27,18 @@ mkdir -p "$VENDOR_DIR"
     fi
 ) 9>"$LOCK_FILE"
 
+# Migrations used to be a manual post-deploy step (docs/deployment.md §2) —
+# easy to forget, and exactly what left a freshly deployed feature's tables
+# missing in production (turnamen-kemerdekaan: routes/code deployed fine,
+# but its endpoints had no schema to query yet). Run pending migrations
+# automatically instead, guarded by the same flock pattern as composer
+# install above so only one of the concurrently-starting app/queue/scheduler
+# containers runs them per deploy.
+MIGRATE_LOCK_FILE="$VENDOR_DIR/.migrate.lock"
+(
+    flock 9
+    echo "[entrypoint] running pending migrations..."
+    php artisan migrate --force
+) 9>"$MIGRATE_LOCK_FILE"
+
 exec "$@"

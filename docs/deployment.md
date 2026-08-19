@@ -28,9 +28,14 @@ image (jangan cache config saat development — env berubah-ubah).
 
 ## 2. Alur rilis
 
+`backend/docker/entrypoint.sh` menjalankan `php artisan migrate --force`
+otomatis setiap container `app`/`queue`/`scheduler` start (di-guard dengan
+`flock` yang sama seperti langkah `composer install`, jadi hanya salah satu
+dari ketiganya yang benar-benar menjalankan migrasi per deploy) — tidak
+perlu lagi dijalankan manual. Sisa langkah rilis:
+
 ```bash
 docker compose -f docker-compose.yml pull        # atau build image production
-docker compose exec app php artisan migrate --force
 docker compose exec app php artisan config:cache
 docker compose exec app php artisan route:cache
 docker compose restart queue scheduler
@@ -49,8 +54,11 @@ Aman dijalankan ulang (upsert berdasarkan email) — termasuk kalau database
 ter-reset di deploy berikutnya.
 
 `migrate --force` diperlukan karena `APP_ENV=production` menolak migrasi
-interaktif tanpa flag ini. Jalankan migrasi **sebelum** menukar traffic ke
-container baru pada deployment zero-downtime.
+interaktif tanpa flag ini — entrypoint sudah memakai flag ini secara
+otomatis. Karena migrasi berjalan di dalam entrypoint container baru,
+sebelum `exec php-fpm`/`queue:work`/`schedule:work`, migrasi tetap selesai
+**sebelum** container itu mulai melayani traffic atau job, konsisten dengan
+prinsip zero-downtime di atas.
 
 ## 3. Backup
 
