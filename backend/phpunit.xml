@@ -29,6 +29,9 @@
         <env name="FILESYSTEM_DISK" value="local" force="true"/>
         <env name="MAIL_MAILER" value="array" force="true"/>
         <env name="QUEUE_CONNECTION" value="sync" force="true"/>
+        <!-- Never let tests hit the real OpenWA gateway, regardless of what
+             the actual deploy/dev environment has WHATSAPP_PROVIDER set to. -->
+        <env name="WHATSAPP_PROVIDER" value="log" force="true"/>
         <env name="SESSION_DRIVER" value="array" force="true"/>
         <env name="PULSE_ENABLED" value="false" force="true"/>
         <env name="TELESCOPE_ENABLED" value="false" force="true"/>

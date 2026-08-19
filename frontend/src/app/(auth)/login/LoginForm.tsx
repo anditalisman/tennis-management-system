@@ -29,6 +29,9 @@ export function LoginForm({ next }: { next?: string }) {
         <Button type="submit" loading={pending} className="mt-2 w-full">
           Masuk
         </Button>
+        <Link href="/lupa-password" className="text-center text-sm font-semibold text-(--color-court-600) hover:underline">
+          Lupa kata sandi?
+        </Link>
       </form>
 
       {isUnverified && (

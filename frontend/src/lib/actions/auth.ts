@@ -75,6 +75,42 @@ export async function verifyWhatsappAction(_prevState: VerifyWhatsappState, form
   return { success: true };
 }
 
+export type ForgotPasswordState = { message?: string; error?: string } | undefined;
+
+export async function forgotPasswordAction(_prevState: ForgotPasswordState, formData: FormData): Promise<ForgotPasswordState> {
+  const email = String(formData.get("email") ?? "").trim();
+  if (!email) {
+    return { error: "Masukkan email Anda terlebih dahulu." };
+  }
+
+  try {
+    const result = await serverApi<{ message: string }>("/auth/forgot-password", { method: "POST", body: { email } });
+    return { message: result.message };
+  } catch (error) {
+    return { error: error instanceof ApiError ? error.message : "Tidak dapat terhubung ke server. Coba lagi." };
+  }
+}
+
+export type ResetPasswordState = { error?: string; fieldErrors?: Record<string, string>; success?: boolean } | undefined;
+
+export async function resetPasswordAction(_prevState: ResetPasswordState, formData: FormData): Promise<ResetPasswordState> {
+  const payload = {
+    email: String(formData.get("email") ?? "").trim(),
+    code: String(formData.get("code") ?? "").trim(),
+    password: String(formData.get("password") ?? ""),
+    password_confirmation: String(formData.get("password_confirmation") ?? ""),
+  };
+
+  try {
+    await serverApi("/auth/reset-password", { method: "POST", body: payload });
+  } catch (error) {
+    if (error instanceof ApiError) return { error: error.message, fieldErrors: error.fieldErrors() };
+    return { error: "Tidak dapat terhubung ke server. Coba lagi." };
+  }
+
+  return { success: true };
+}
+
 export async function logoutAction(): Promise<void> {
   try {
     await serverApi("/auth/logout", { method: "POST" });

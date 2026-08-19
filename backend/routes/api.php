@@ -20,6 +20,7 @@ use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\PackageCheckoutController;
 use App\Http\Controllers\Api\V1\PackageController;
 use App\Http\Controllers\Api\V1\ParticipantController;
+use App\Http\Controllers\Api\V1\PasswordResetController;
 use App\Http\Controllers\Api\V1\PaymentController;
 use App\Http\Controllers\Api\V1\PaymentGatewayWebhookController;
 use App\Http\Controllers\Api\V1\PaymentMethodController;
@@ -41,6 +42,8 @@ Route::prefix('v1')->group(function () {
     Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:auth');
     Route::post('/auth/verify-whatsapp', [WhatsappVerificationController::class, 'verify'])->middleware('throttle:auth');
     Route::post('/auth/verify-whatsapp/resend', [WhatsappVerificationController::class, 'resend'])->middleware('throttle:auth');
+    Route::post('/auth/forgot-password', [PasswordResetController::class, 'forgot'])->middleware('throttle:auth');
+    Route::post('/auth/reset-password', [PasswordResetController::class, 'reset'])->middleware('throttle:auth');
 
     // Public registration: works for both guests (with guardian payload) and
     // authenticated adult participants (self-registration) — see StoreParticipantRequest.
