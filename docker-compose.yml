@@ -88,8 +88,11 @@ x-backend-image: &backend-image
       condition: service_healthy
     redis:
       condition: service_healthy
-    mailserver:
-      condition: service_healthy
+    # NOT mailserver: it needs a mailbox created (`setup email add`) before
+    # it reports healthy, and mail is sent async via queued jobs anyway — a
+    # hard health-gate here would block the whole app's startup on that
+    # one-time manual step (or on mail even being self-hosted at all; an
+    # external SMTP relay works fine as MAIL_HOST too, see .env.example).
 
 services:
   app:
