@@ -293,6 +293,13 @@ services:
     <<: *dns
     image: ldez/traefik-certs-dumper:latest
 
+    # Opt-in: this shared host already runs other mail infra on the
+    # standard SMTP/IMAP ports (see mailserver's ports: below) — plain
+    # `docker compose up -d` must NOT try to start these and collide with
+    # it. Enable deliberately once ready with `--profile mailserver` (or
+    # COMPOSE_PROFILES=mailserver).
+    profiles: ["mailserver"]
+
     environment:
       - MAIL_HOSTNAME=${MAIL_HOSTNAME:-smtp.zultennis.my.id}
 
@@ -325,6 +332,8 @@ services:
     <<: *dns
     image: docker.io/mailserver/docker-mailserver:latest
     hostname: ${MAIL_HOSTNAME:-smtp.zultennis.my.id}
+
+    profiles: ["mailserver"]
 
     ports:
       - "${MAIL_SMTP_PORT:-25}:25"
@@ -377,6 +386,8 @@ services:
   webmail:
     <<: *dns
     image: roundcube/roundcubemail:latest
+
+    profiles: ["mailserver"]
 
     environment:
       # The gateway of the "default" network below (a container on a Docker
