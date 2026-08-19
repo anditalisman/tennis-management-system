@@ -20,8 +20,28 @@ development lokal dan **wajib diganti** sebelum rilis:
 | `DB_PASSWORD`, `MYSQL_ROOT_PASSWORD` | Placeholder `change-me-...` | Ganti dengan secret kuat, simpan di secret manager — jangan commit |
 | `MINIO_ROOT_USER` / `MINIO_ROOT_PASSWORD` (atau kredensial S3 nyata) | Placeholder | Ganti; pertimbangkan S3 terkelola alih-alih MinIO self-hosted untuk production |
 | `PAYMENT_GATEWAY_WEBHOOK_SECRET` | Placeholder `change-me-webhook-secret` | Ganti dengan secret yang diberikan provider payment gateway sesungguhnya saat integrasi Sprint 9 lanjutan dipakai untuk provider nyata |
-| `MAIL_MAILER` | `log` di dev (tidak benar-benar mengirim email) | Ganti ke `smtp`/`ses`/dsb. sebelum rilis agar notifikasi §Sprint 7 benar-benar terkirim |
+| `MAIL_MAILER` | `log` di dev (tidak benar-benar mengirim email) | Ganti ke `smtp` (mailserver self-hosted di bawah) atau provider lain sebelum rilis agar notifikasi §Sprint 7 benar-benar terkirim |
+| `MAIL_PASSWORD` | Placeholder `change-me-mail-secret` | Ganti dengan secret kuat — **harus sama persis** dengan password mailbox yang dibuat lewat `setup email add` (lihat §2a) |
+| `WHATSAPP_PROVIDER` | `log` (OTP registrasi dicatat, tidak benar-benar dikirim) | Ganti ke `openwa` setelah `OPENWA_API_KEY`/`OPENWA_SESSION_ID` diisi dan sesi WhatsApp ter-pairing di gateway — lihat §1a |
 | `SANCTUM_STATEFUL_DOMAINS`, `SPA_URL` | Diarahkan ke `localhost:3000` | Ganti ke domain frontend production |
+
+### 1a. WhatsApp OTP (verifikasi registrasi)
+
+Registrasi peserta (`/pendaftaran` di situs publik) mengirim kode OTP 6
+digit lewat WhatsApp, bukan email — lihat `WhatsappOtpService` dan
+`SendNotificationJob`. Login diblokir sampai `whatsapp_verified_at` terisi.
+Selama `WHATSAPP_PROVIDER=log` (default), kode OTP hanya tercatat di
+`notification_logs`, **tidak benar-benar terkirim** — peserta baru tidak
+akan pernah bisa memverifikasi akun. Sebelum mengumumkan pendaftaran
+publik, pastikan:
+
+1. Sesi WhatsApp sudah ter-*pairing* (login QR) di gateway OpenWA
+   (`OPENWA_BASE_URL`).
+2. `OPENWA_API_KEY` dan `OPENWA_SESSION_ID` terisi di Environment
+   Variables.
+3. `WHATSAPP_PROVIDER=openwa`.
+4. Tes kirim manual (daftar satu akun uji, pastikan kode OTP benar-benar
+   masuk ke WhatsApp).
 
 Setelah mengganti `.env`, jalankan `php artisan config:cache` di production
 image (jangan cache config saat development — env berubah-ubah).
@@ -59,6 +79,32 @@ otomatis. Karena migrasi berjalan di dalam entrypoint container baru,
 sebelum `exec php-fpm`/`queue:work`/`schedule:work`, migrasi tetap selesai
 **sebelum** container itu mulai melayani traffic atau job, konsisten dengan
 prinsip zero-downtime di atas.
+
+### 2a. Setup mail server (sekali di awal)
+
+Layanan `mailserver` (docker-mailserver) **menolak untuk start** sampai
+minimal satu mailbox ada — tanpa ini container akan mati sendiri ~2 menit
+setelah boot ("You need at least one mail account to start Dovecot"). Sekali
+saja setelah deploy pertama:
+
+```bash
+docker compose exec mailserver setup email add no-reply@zultennis.my.id 'ISI_SAMA_DENGAN_MAIL_PASSWORD'
+```
+
+Password ini **harus identik** dengan `MAIL_PASSWORD` di Environment
+Variables — docker-mailserver selalu mewajibkan SMTP AUTH begitu klien
+(Laravel) menawarkan username, jadi kredensial yang tidak cocok gagal
+total, tidak jatuh ke "relay tanpa autentikasi" meski `PERMIT_DOCKER=network`
+sudah diaktifkan.
+
+Sebelum mail benar-benar terkirim ke penyedia lain (Gmail, dst.) tanpa
+ditolak/dianggap spam, pastikan DNS domain berikut sudah diset mengarah ke
+host Dokploy ini:
+
+- `A` record: `smtp.zultennis.my.id` dan `mail.zultennis.my.id`
+- `MX` record: domain pengirim → `smtp.zultennis.my.id`
+- `SPF`, `DKIM` (docker-mailserver punya `setup config dkim` untuk generate
+  key-nya), `DMARC`, dan `PTR` (reverse DNS di sisi provider VPS)
 
 ## 3. Backup
 

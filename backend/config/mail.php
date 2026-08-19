@@ -47,6 +47,16 @@ return [
             'password' => env('MAIL_PASSWORD'),
             'timeout' => null,
             'local_domain' => env('MAIL_EHLO_DOMAIN', parse_url((string) env('APP_URL', 'http://localhost'), PHP_URL_HOST)),
+            // Only needed for the self-hosted mailserver's self-signed cert
+            // (see docker-compose.yml's "mailserver" service) — leave unset
+            // for any real SMTP provider (Gmail, Mailgun, SES, ...).
+            //
+            // Must be a top-level key, not nested: Laravel passes this whole
+            // array straight through as Symfony's Dsn $options, and
+            // EsmtpTransportFactory reads $dsn->getOption('verify_peer')
+            // directly (see vendor/symfony/mailer/.../EsmtpTransportFactory.php)
+            // — a nested 'stream' key here is never read by anything.
+            'verify_peer' => ! (bool) env('MAIL_ALLOW_SELF_SIGNED', false),
         ],
 
         'ses' => [

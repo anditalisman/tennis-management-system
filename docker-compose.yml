@@ -46,17 +46,33 @@ x-backend-image: &backend-image
     AWS_USE_PATH_STYLE_ENDPOINT: "true"
 
     MAIL_MAILER: ${MAIL_MAILER:-log}
-    MAIL_HOST: ${MAIL_HOST:-127.0.0.1}
-    MAIL_PORT: ${MAIL_PORT:-2525}
-    MAIL_USERNAME: ${MAIL_USERNAME:-null}
-    MAIL_PASSWORD: ${MAIL_PASSWORD:-null}
+    MAIL_SCHEME: ${MAIL_SCHEME:-}
+    MAIL_HOST: ${MAIL_HOST:-mailserver}
+    MAIL_PORT: ${MAIL_PORT:-587}
+    MAIL_USERNAME: ${MAIL_USERNAME:-no-reply@zultennis.my.id}
+    # Must match the mailbox password set via `setup email add` on the
+    # mailserver container (see .env.example) — mismatched credentials
+    # hard-fail SMTP AUTH, they don't fall back to unauthenticated relay.
+    MAIL_PASSWORD: ${MAIL_PASSWORD:?MAIL_PASSWORD wajib diisi}
     MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-no-reply@zultennis.my.id}
     MAIL_FROM_NAME: ${MAIL_FROM_NAME:-Zul Tennis Clinic Management System}
+    # Only trusts the self-hosted mailserver's self-signed cert below — leave
+    # false (default) against any real external SMTP provider.
+    MAIL_ALLOW_SELF_SIGNED: ${MAIL_ALLOW_SELF_SIGNED:-false}
 
     SANCTUM_STATEFUL_DOMAINS: ${SANCTUM_STATEFUL_DOMAINS:-zultennis.my.id}
     SPA_URL: ${SPA_URL:-https://zultennis.my.id}
 
     PAYMENT_GATEWAY_WEBHOOK_SECRET: ${PAYMENT_GATEWAY_WEBHOOK_SECRET:?PAYMENT_GATEWAY_WEBHOOK_SECRET wajib diisi}
+
+    # WhatsApp OTP (registration verification) — see SendNotificationJob /
+    # WhatsappOtpService. "log" (default) is a safe no-op until a WhatsApp
+    # session is paired on the OpenWA gateway and these are filled in.
+    WHATSAPP_PROVIDER: ${WHATSAPP_PROVIDER:-log}
+    OPENWA_BASE_URL: ${OPENWA_BASE_URL:-}
+    OPENWA_API_KEY: ${OPENWA_API_KEY:-}
+    OPENWA_SESSION_ID: ${OPENWA_SESSION_ID:-}
+    OPENWA_TIMEOUT: ${OPENWA_TIMEOUT:-15}
 
   volumes:
     - ./backend:/var/www/html
@@ -71,6 +87,8 @@ x-backend-image: &backend-image
     mysql:
       condition: service_healthy
     redis:
+      condition: service_healthy
+    mailserver:
       condition: service_healthy
 
 services:
@@ -262,24 +280,182 @@ services:
 
     restart: unless-stopped
 
+  # Watches Traefik's own ACME storage (Dokploy's Traefik already obtains
+  # Let's Encrypt certs for this host's other domains the same way — a cert
+  # for smtp.zultennis.my.id gets issued via the "webmail" service's
+  # ztcms-smtp-cert router below) and dumps it to individual PEM files
+  # mailserver can read, since docker-mailserver doesn't speak Traefik's
+  # acme.json format directly. Re-dumps hourly to pick up renewals.
+  certs-dumper:
+    <<: *dns
+    image: ldez/traefik-certs-dumper:latest
+
+    environment:
+      - MAIL_HOSTNAME=${MAIL_HOSTNAME:-smtp.zultennis.my.id}
+
+    volumes:
+      - /etc/dokploy/traefik/dynamic/acme.json:/acme.json:ro
+      - mail_certs:/output
+
+    # traefik-certs-dumper's own output filenames (certificate.crt /
+    # privatekey.key) don't match what docker-mailserver looks for
+    # (fullchain.pem / privkey.pem under /etc/letsencrypt/live/<domain>/)
+    # — dump to a scratch subdir first, then copy into the exact names/path
+    # docker-mailserver requires.
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        while true; do
+          traefik-certs-dumper file --version v2 --source /acme.json --dest /output/_raw --domain-subdir
+          if [ -f "/output/_raw/${MAIL_HOSTNAME}/certificate.crt" ]; then
+            mkdir -p "/output/${MAIL_HOSTNAME}"
+            cp "/output/_raw/${MAIL_HOSTNAME}/certificate.crt" "/output/${MAIL_HOSTNAME}/fullchain.pem"
+            cp "/output/_raw/${MAIL_HOSTNAME}/privatekey.key" "/output/${MAIL_HOSTNAME}/privkey.pem"
+          fi
+          sleep 3600
+        done
+
+    restart: unless-stopped
+
+  mailserver:
+    <<: *dns
+    image: docker.io/mailserver/docker-mailserver:latest
+    hostname: ${MAIL_HOSTNAME:-smtp.zultennis.my.id}
+
+    ports:
+      - "${MAIL_SMTP_PORT:-25}:25"
+      - "${MAIL_SUBMISSION_PORT:-587}:587"
+      - "${MAIL_SUBMISSIONS_PORT:-465}:465"
+      - "${MAIL_IMAPS_PORT:-993}:993"
+
+    volumes:
+      - mail_data:/var/mail
+      - mail_state:/var/mail-state
+      - mail_logs:/var/log/mail
+      - mail_config:/tmp/docker-mailserver
+      - mail_certs:/etc/letsencrypt/live:ro
+
+    environment:
+      - OVERRIDE_HOSTNAME=${MAIL_HOSTNAME:-smtp.zultennis.my.id}
+      # Trusts unauthenticated relay from containers on the "ztcms" network
+      # below (the app/queue/scheduler containers) — that's how the Laravel
+      # app sends without needing a real mailbox/password of its own.
+      - PERMIT_DOCKER=network
+      - SSL_TYPE=letsencrypt
+      - ONE_DIR=1
+      - ENABLE_SPAMASSASSIN=0
+      - ENABLE_CLAMAV=0
+      - ENABLE_FAIL2BAN=0
+      - ENABLE_OPENDKIM=1
+      - ENABLE_OPENDMARC=1
+
+    cap_add:
+      - NET_ADMIN
+
+    depends_on:
+      - certs-dumper
+
+    healthcheck:
+      test: ["CMD", "nc", "-z", "-w1", "127.0.0.1", "25"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+    # Deliberately NOT on dokploy-network — mailserver never needs Traefik
+    # routing (SMTP/IMAP are raw TCP, published via ports: above, not HTTP),
+    # so it just stays on the app's own network.
+    networks:
+      - ztcms
+
+    restart: unless-stopped
+
+  webmail:
+    <<: *dns
+    image: roundcube/roundcubemail:latest
+
+    environment:
+      # The gateway of the "default" network below (a container on a Docker
+      # bridge network can always reach the host through its gateway IP,
+      # which routes to the host's published ports) — NOT
+      # host.docker.internal: that resolves to the system default bridge's
+      # gateway regardless of which networks this container is actually on,
+      # and this container isn't attached to that one, so connections to it
+      # silently fail ("Connection to storage server failed" in Roundcube).
+      # Verify this IP after first deploy: `docker network inspect
+      # ztcms_default` — it should be the first usable address in
+      # 10.40.3.48/28 (10.40.3.49), adjust here if Docker assigned a
+      # different one.
+      - ROUNDCUBEMAIL_DEFAULT_HOST=ssl://10.40.3.49
+      - ROUNDCUBEMAIL_DEFAULT_PORT=${MAIL_IMAPS_PORT:-993}
+      - ROUNDCUBEMAIL_SMTP_SERVER=tls://10.40.3.49
+      - ROUNDCUBEMAIL_SMTP_PORT=${MAIL_SUBMISSION_PORT:-587}
+      - ROUNDCUBEMAIL_DB_TYPE=sqlite
+
+    volumes:
+      - webmail_data:/var/roundcube/db
+      - ./infra/webmail/tls-verify-override.sh:/entrypoint-tasks/post-setup/10-tls-verify-override.sh:ro
+
+    labels:
+      - traefik.docker.network=dokploy-network
+      - traefik.http.routers.ztcms-webmail-web.rule=Host(`${MAIL_WEBMAIL_DOMAIN:-mail.zultennis.my.id}`)
+      - traefik.http.routers.ztcms-webmail-web.entrypoints=web
+      - traefik.http.services.ztcms-webmail-web.loadbalancer.server.port=80
+      - traefik.http.routers.ztcms-webmail-web.service=ztcms-webmail-web
+      - traefik.http.routers.ztcms-webmail-web.middlewares=redirect-to-https@file
+      - traefik.http.routers.ztcms-webmail-websecure.rule=Host(`${MAIL_WEBMAIL_DOMAIN:-mail.zultennis.my.id}`)
+      - traefik.http.routers.ztcms-webmail-websecure.entrypoints=websecure
+      - traefik.http.services.ztcms-webmail-websecure.loadbalancer.server.port=80
+      - traefik.http.routers.ztcms-webmail-websecure.service=ztcms-webmail-websecure
+      - traefik.http.routers.ztcms-webmail-websecure.tls.certresolver=letsencrypt
+      # Purely to get Traefik to obtain/renew a Let's Encrypt cert for
+      # smtp.zultennis.my.id (mailserver's TLS cert — see certs-dumper
+      # above); nobody actually browses this host, this container is just a
+      # convenient (already Traefik-routed) place to hang the router.
+      - traefik.http.routers.ztcms-smtp-cert-web.rule=Host(`${MAIL_HOSTNAME:-smtp.zultennis.my.id}`)
+      - traefik.http.routers.ztcms-smtp-cert-web.entrypoints=web
+      - traefik.http.services.ztcms-smtp-cert-web.loadbalancer.server.port=80
+      - traefik.http.routers.ztcms-smtp-cert-web.service=ztcms-smtp-cert-web
+      - traefik.http.routers.ztcms-smtp-cert-websecure.rule=Host(`${MAIL_HOSTNAME:-smtp.zultennis.my.id}`)
+      - traefik.http.routers.ztcms-smtp-cert-websecure.entrypoints=websecure
+      - traefik.http.services.ztcms-smtp-cert-websecure.loadbalancer.server.port=80
+      - traefik.http.routers.ztcms-smtp-cert-websecure.service=ztcms-smtp-cert-websecure
+      - traefik.http.routers.ztcms-smtp-cert-websecure.tls.certresolver=letsencrypt
+      - traefik.enable=true
+
+    networks:
+      - dokploy-network
+      - default
+
+    depends_on:
+      - mailserver
+
+    restart: unless-stopped
+
 networks:
   # Explicit subnet: the host's default Docker address pools (172.16.0.0/12 and 192.168.0.0/16)
   # are fully exhausted by the many other apps on this Dokploy host, so a new network creation
   # fails with "all predefined address pools have been fully subnetted" unless it's pinned
-  # outside those ranges. /28 is plenty for this stack's 7 services.
+  # outside those ranges. /28 (13 usable addresses) covers this stack's 9 services.
   ztcms:
     driver: bridge
     ipam:
       config:
         - subnet: 10.40.1.80/28
-  # No service here joins "default" — Dokploy's own deploy wrapper still creates a
-  # "<project>_default" network alongside this one regardless (for its own routing), and that
-  # network was hitting the same exhausted-pool problem. Declaring it here (even unused) is
-  # enough for Compose to create it with this pinned subnet instead of auto-allocating one.
+  # Dokploy's own deploy wrapper creates a "<project>_default" network alongside this one
+  # regardless (for its own routing), and that network was hitting the same exhausted-pool
+  # problem — pinning it here (even when unused) is enough for Compose to create it with this
+  # subnet instead of auto-allocating one. "webmail" below also joins it deliberately, to reach
+  # mailserver's host-published ports via this network's gateway IP (see that service's comment).
   default:
     ipam:
       config:
         - subnet: 10.40.3.48/28
+  # Dokploy's shared Traefik network — already exists on this host (other Dokploy-managed
+  # projects join it too), only "webmail" attaches to it, purely for its own domain routing.
+  dokploy-network:
+    external: true
 
 volumes:
   mysql_data:
@@ -288,3 +464,9 @@ volumes:
   backend_vendor:
   backend_storage:
   backend_bootstrap_cache:
+  mail_data:
+  mail_state:
+  mail_logs:
+  mail_config:
+  mail_certs:
+  webmail_data:
