@@ -42,6 +42,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { href: "/portal/evaluasi", label: "Evaluasi", roles: [...STAFF, COACH, PARTICIPANT, GUARDIAN] },
       { href: "/portal/galeri", label: "Galeri", roles: [...STAFF, COACH, PARTICIPANT, GUARDIAN] },
       { href: "/portal/pengumuman", label: "Pengumuman", roles: [...STAFF, PARTICIPANT, GUARDIAN] },
+      { href: "/portal/turnamen", label: "Turnamen Kemerdekaan", roles: [...STAFF] },
     ],
   },
   {

@@ -28,6 +28,7 @@ use App\Http\Controllers\Api\V1\ProgramController;
 use App\Http\Controllers\Api\V1\PublicController;
 use App\Http\Controllers\Api\V1\ReferralController;
 use App\Http\Controllers\Api\V1\ReportController;
+use App\Http\Controllers\Api\V1\TournamentController;
 use App\Http\Controllers\Api\V1\TrainingClassController;
 use App\Http\Controllers\Api\V1\TrainingScheduleController;
 use App\Http\Controllers\Api\V1\TrialClassController;
@@ -58,6 +59,14 @@ Route::prefix('v1')->group(function () {
     Route::get('/public/courts', [PublicController::class, 'courts']);
     Route::get('/public/schedules', [PublicController::class, 'schedules']);
     Route::get('/public/galleries', [PublicController::class, 'galleries']);
+
+    // Mini turnamen kemerdekaan: open registration + live participant/bracket
+    // view, no login required. The draw (team pairing + bracket) is run by
+    // an admin below — Beginner and Upper Beginner partner up as a TEAM,
+    // then teams play against other teams.
+    Route::post('/tournament/participants', [TournamentController::class, 'store'])->middleware('throttle:auth');
+    Route::get('/public/tournament/participants', [TournamentController::class, 'index']);
+    Route::get('/public/tournament/matches', [TournamentController::class, 'matches']);
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/auth/logout', [AuthController::class, 'logout']);
@@ -259,6 +268,12 @@ Route::prefix('v1')->group(function () {
 
         Route::get('/notifications', [NotificationController::class, 'index']);
         Route::post('/notifications/{notification}/read', [NotificationController::class, 'markRead']);
+
+        Route::middleware('permission:tournaments.manage')->group(function () {
+            Route::patch('/tournament/participants/{tournamentParticipant}', [TournamentController::class, 'update']);
+            Route::post('/tournament/draw', [TournamentController::class, 'generateDraw']);
+            Route::delete('/tournament/draw', [TournamentController::class, 'clearDraw']);
+        });
 
         Route::middleware('permission:reports.view,reports.manage')->group(function () {
             Route::get('/reports/attendance', [ReportController::class, 'attendance']);

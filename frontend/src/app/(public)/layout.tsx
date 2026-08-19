@@ -5,6 +5,7 @@ const NAV = [
   { href: "/program", label: "Program" },
   { href: "/paket", label: "Paket & Biaya" },
   { href: "/pelatih", label: "Pelatih" },
+  { href: "/turnamen-kemerdekaan", label: "Turnamen Kemerdekaan" },
   { href: "/kontak", label: "Kontak" },
 ];
 

@@ -96,6 +96,7 @@ class RolePermissionSeeder extends Seeder
             'view' => ['management', 'participant', 'guardian'],
             'manage' => ['super-admin', 'administrator'],
         ],
+        'tournaments' => ['manage' => ['super-admin', 'administrator']],
         'reports' => ['view' => ['administrator', 'coach', 'finance'], 'manage' => ['super-admin', 'management']],
         'audit-logs' => ['view' => ['management'], 'manage' => ['super-admin']],
     ];
