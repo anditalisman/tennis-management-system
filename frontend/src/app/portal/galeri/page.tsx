@@ -59,7 +59,7 @@ export default async function GaleriListPage({ searchParams }: { searchParams: P
                 className="border-t-0"
               />
               <div className="px-5 pb-4">
-                <Link href={`/portal/galeri/${gallery.id}`} className="text-sm font-semibold text-(--color-court-600) hover:underline">
+                <Link href={`/portal/galeri/${gallery.id}`} className="text-sm font-semibold text-(--color-court-500) hover:underline">
                   Lihat Detail
                 </Link>
               </div>

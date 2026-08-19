@@ -71,7 +71,7 @@ export default async function PesertaDetailPage({
 
   return (
     <div className="max-w-4xl">
-      <Link href="/portal/peserta" className="text-sm font-semibold text-(--color-court-600) hover:underline">
+      <Link href="/portal/peserta" className="text-sm font-semibold text-(--color-court-500) hover:underline">
         ← Kembali ke daftar peserta
       </Link>
 
@@ -112,7 +112,7 @@ export default async function PesertaDetailPage({
           title="Data Peserta"
           action={
             staff ? (
-              <Link href={`/portal/peserta/${id}/edit`} className="text-sm font-semibold text-(--color-court-600) hover:underline">
+              <Link href={`/portal/peserta/${id}/edit`} className="text-sm font-semibold text-(--color-court-500) hover:underline">
                 Edit
               </Link>
             ) : undefined

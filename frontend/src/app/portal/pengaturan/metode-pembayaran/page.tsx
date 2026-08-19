@@ -84,7 +84,7 @@ export default async function MetodePembayaranListPage() {
                         <div className="flex items-center gap-3">
                           <Link
                             href={`/portal/pengaturan/metode-pembayaran/${m.id}/edit`}
-                            className="font-semibold text-(--color-court-600) hover:underline"
+                            className="font-semibold text-(--color-court-500) hover:underline"
                           >
                             Edit
                           </Link>

@@ -72,7 +72,7 @@ export default async function ProgramListPage({ searchParams }: { searchParams: 
                       {staff && (
                         <Td>
                           <div className="flex items-center gap-3">
-                            <Link href={`/portal/program/${p.id}/edit`} className="font-semibold text-(--color-court-600) hover:underline">
+                            <Link href={`/portal/program/${p.id}/edit`} className="font-semibold text-(--color-court-500) hover:underline">
                               Edit
                             </Link>
                             <form action={deleteProgramAction.bind(null, p.id)}>

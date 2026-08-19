@@ -43,11 +43,15 @@ class DemoUserSeeder extends Seeder
                     'name' => $account['name'],
                     'branch_id' => $branch?->id,
                     'password' => Hash::make('password'),
-                    'email_verified_at' => now(),
-                    'whatsapp_verified_at' => now(),
                     'status' => User::STATUS_ACTIVE,
                 ],
             );
+
+            // email_verified_at/whatsapp_verified_at aren't in User's #[Fillable(...)]
+            // list, so passing them through updateOrCreate() above is silently
+            // dropped — forceFill bypasses that guard (see CreateAdminCommand,
+            // which had the same bug).
+            $user->forceFill(['email_verified_at' => now(), 'whatsapp_verified_at' => now()])->save();
 
             if ($role) {
                 $user->roles()->syncWithoutDetaching([$role->id]);

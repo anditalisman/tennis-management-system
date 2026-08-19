@@ -40,7 +40,7 @@ export default async function GaleriDetailPage({
 
   return (
     <div className="max-w-3xl">
-      <Link href="/portal/galeri" className="text-sm font-semibold text-(--color-court-600) hover:underline">
+      <Link href="/portal/galeri" className="text-sm font-semibold text-(--color-court-500) hover:underline">
         ← Kembali ke galeri
       </Link>
 

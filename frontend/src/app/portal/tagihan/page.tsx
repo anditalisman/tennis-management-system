@@ -73,7 +73,7 @@ export default async function TagihanListPage({ searchParams }: { searchParams: 
                         <StatusBadge status={inv.status} />
                       </Td>
                       <Td>
-                        <Link href={`/portal/tagihan/${inv.id}`} className="font-semibold text-(--color-court-600) hover:underline">
+                        <Link href={`/portal/tagihan/${inv.id}`} className="font-semibold text-(--color-court-500) hover:underline">
                           Detail
                         </Link>
                       </Td>

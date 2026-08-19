@@ -63,7 +63,7 @@ export default async function KelasDetailPage({
 
   return (
     <div className="max-w-3xl">
-      <Link href="/portal/kelas" className="text-sm font-semibold text-(--color-court-600) hover:underline">
+      <Link href="/portal/kelas" className="text-sm font-semibold text-(--color-court-500) hover:underline">
         ← Kembali ke daftar kelas
       </Link>
 
@@ -83,7 +83,7 @@ export default async function KelasDetailPage({
         <div className="flex items-center gap-3">
           <StatusBadge status={trainingClass.status} />
           {staff && (
-            <Link href={`/portal/kelas/${id}/edit`} className="text-sm font-semibold text-(--color-court-600) hover:underline">
+            <Link href={`/portal/kelas/${id}/edit`} className="text-sm font-semibold text-(--color-court-500) hover:underline">
               Edit
             </Link>
           )}

@@ -72,7 +72,7 @@ export default async function KelasListPage({ searchParams }: { searchParams: Pr
                         <StatusBadge status={c.status} />
                       </Td>
                       <Td>
-                        <Link href={`/portal/kelas/${c.id}`} className="font-semibold text-(--color-court-600) hover:underline">
+                        <Link href={`/portal/kelas/${c.id}`} className="font-semibold text-(--color-court-500) hover:underline">
                           Detail
                         </Link>
                       </Td>

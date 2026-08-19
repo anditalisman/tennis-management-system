@@ -84,7 +84,7 @@ export default async function JadwalDetailPage({
 
   return (
     <div className="max-w-3xl">
-      <Link href="/portal/jadwal" className="text-sm font-semibold text-(--color-court-600) hover:underline">
+      <Link href="/portal/jadwal" className="text-sm font-semibold text-(--color-court-500) hover:underline">
         ← Kembali ke daftar jadwal
       </Link>
 

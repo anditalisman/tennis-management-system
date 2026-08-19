@@ -103,7 +103,7 @@ export function ForgotPasswordForm() {
 
       <p className="text-center text-sm text-(--color-ink-500)">
         Sudah ingat kata sandi?{" "}
-        <Link href="/login" className="font-semibold text-(--color-court-600) hover:underline">
+        <Link href="/login" className="font-semibold text-(--color-court-500) hover:underline">
           Masuk
         </Link>
       </p>

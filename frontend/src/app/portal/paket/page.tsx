@@ -74,7 +74,7 @@ export default async function PaketListPage({ searchParams }: { searchParams: Pr
                       {canManage && (
                         <Td>
                           <div className="flex items-center gap-3">
-                            <Link href={`/portal/paket/${p.id}/edit`} className="font-semibold text-(--color-court-600) hover:underline">
+                            <Link href={`/portal/paket/${p.id}/edit`} className="font-semibold text-(--color-court-500) hover:underline">
                               Edit
                             </Link>
                             <form action={deletePackageAction.bind(null, p.id)}>

@@ -122,7 +122,7 @@ export default async function TurnamenAdminPage({
                             <form
                               action={moveTournamentParticipantCategoryAction.bind(null, p.id, OTHER_CATEGORY[p.category])}
                             >
-                              <button type="submit" className="text-xs font-semibold text-(--color-court-600) hover:underline">
+                              <button type="submit" className="text-xs font-semibold text-(--color-court-500) hover:underline">
                                 Pindah ke {CATEGORY_LABELS[OTHER_CATEGORY[p.category]]}
                               </button>
                             </form>

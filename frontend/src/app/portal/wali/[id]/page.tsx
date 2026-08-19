@@ -25,7 +25,7 @@ export default async function WaliDetailPage({ params }: { params: Promise<{ id:
 
   return (
     <div className="max-w-4xl">
-      <Link href="/portal/wali" className="text-sm font-semibold text-(--color-court-600) hover:underline">
+      <Link href="/portal/wali" className="text-sm font-semibold text-(--color-court-500) hover:underline">
         ← Kembali ke daftar wali
       </Link>
       <h1 className="mt-4 font-display text-2xl font-bold text-(--color-ink-900)">Anak yang Dipantau</h1>
@@ -59,7 +59,7 @@ export default async function WaliDetailPage({ params }: { params: Promise<{ id:
                         <StatusBadge status={p.status} />
                       </Td>
                       <Td>
-                        <Link href={`/portal/peserta/${p.id}`} className="font-semibold text-(--color-court-600) hover:underline">
+                        <Link href={`/portal/peserta/${p.id}`} className="font-semibold text-(--color-court-500) hover:underline">
                           Detail
                         </Link>
                       </Td>

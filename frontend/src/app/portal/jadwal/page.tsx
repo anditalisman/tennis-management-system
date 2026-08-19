@@ -74,7 +74,7 @@ export default async function JadwalListPage({ searchParams }: { searchParams: P
                         <StatusBadge status={s.status} />
                       </Td>
                       <Td>
-                        <Link href={`/portal/jadwal/${s.id}`} className="font-semibold text-(--color-court-600) hover:underline">
+                        <Link href={`/portal/jadwal/${s.id}`} className="font-semibold text-(--color-court-500) hover:underline">
                           Detail
                         </Link>
                       </Td>

@@ -69,7 +69,7 @@ export default async function InventarisListPage({ searchParams }: { searchParam
                         <Badge tone={item.condition === "damaged" ? "crit" : "good"}>{item.condition === "damaged" ? "Rusak" : "Baik"}</Badge>
                       </Td>
                       <Td>
-                        <Link href={`/portal/inventaris/${item.id}`} className="font-semibold text-(--color-court-600) hover:underline">
+                        <Link href={`/portal/inventaris/${item.id}`} className="font-semibold text-(--color-court-500) hover:underline">
                           Detail
                         </Link>
                       </Td>

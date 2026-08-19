@@ -68,7 +68,7 @@ export default async function TagihanDetailPage({
 
   return (
     <div className="max-w-3xl">
-      <Link href="/portal/tagihan" className="text-sm font-semibold text-(--color-court-600) hover:underline">
+      <Link href="/portal/tagihan" className="text-sm font-semibold text-(--color-court-500) hover:underline">
         ← Kembali ke daftar tagihan
       </Link>
 
@@ -162,7 +162,7 @@ export default async function TagihanDetailPage({
                       {payment.reference_no ? ` · Ref: ${payment.reference_no}` : ""}
                     </p>
                     {payment.proof_url && (
-                      <a href={payment.proof_url} target="_blank" rel="noreferrer" className="font-semibold text-(--color-court-600) hover:underline">
+                      <a href={payment.proof_url} target="_blank" rel="noreferrer" className="font-semibold text-(--color-court-500) hover:underline">
                         Lihat bukti transfer
                       </a>
                     )}

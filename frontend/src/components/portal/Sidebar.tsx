@@ -6,6 +6,20 @@ import { usePathname } from "next/navigation";
 import type { NavSection } from "@/lib/nav";
 import { cn } from "@/components/ui/cn";
 
+function Brand() {
+  return (
+    <Link href="/portal/dashboard" className="flex items-center gap-2.5">
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-(--color-court-600) font-display text-xs font-black text-(--color-ball-400)">
+        ZT
+      </span>
+      <div>
+        <span className="font-display text-sm font-bold leading-none text-(--color-ink-900)">Zul Tennis Clinic</span>
+        <p className="mt-0.5 text-xs leading-none text-(--color-ink-500)">Portal</p>
+      </div>
+    </Link>
+  );
+}
+
 function NavLinks({ sections, onNavigate }: { sections: NavSection[]; onNavigate?: () => void }) {
   const pathname = usePathname();
 
@@ -13,7 +27,7 @@ function NavLinks({ sections, onNavigate }: { sections: NavSection[]; onNavigate
     <nav className="flex flex-col gap-6">
       {sections.map((section) => (
         <div key={section.title}>
-          <p className="px-3 text-xs font-semibold uppercase tracking-wide text-(--color-ink-300)">{section.title}</p>
+          <p className="px-3 text-xs font-bold uppercase tracking-wide text-(--color-ink-300)">{section.title}</p>
           <div className="mt-1.5 flex flex-col gap-0.5">
             {section.items.map((item) => {
               const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
@@ -25,7 +39,7 @@ function NavLinks({ sections, onNavigate }: { sections: NavSection[]; onNavigate
                   className={cn(
                     "rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                     active
-                      ? "bg-(--color-court-600) text-white"
+                      ? "bg-(--color-court-600) text-white shadow-sm shadow-(--color-court-600)/30"
                       : "text-(--color-ink-700) hover:bg-(--color-ink-900)/6",
                   )}
                 >
@@ -46,7 +60,7 @@ export function Sidebar({ sections }: { sections: NavSection[] }) {
   return (
     <>
       <div className="flex items-center justify-between border-b border-(--color-ink-900)/10 bg-(--color-paper-raised) px-4 py-3 md:hidden">
-        <span className="font-display text-base font-bold text-(--color-court-700)">Zul Tennis Clinic</span>
+        <Brand />
         <button
           type="button"
           onClick={() => setOpen(true)}
@@ -82,10 +96,7 @@ export function Sidebar({ sections }: { sections: NavSection[] }) {
         )}
       >
         <div className="mb-6 flex items-center justify-between px-2">
-          <div>
-            <span className="font-display text-lg font-bold text-(--color-court-700)">Zul Tennis Clinic</span>
-            <p className="text-xs text-(--color-ink-500)">Portal</p>
-          </div>
+          <Brand />
           <button
             type="button"
             onClick={() => setOpen(false)}

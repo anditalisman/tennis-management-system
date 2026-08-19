@@ -110,7 +110,7 @@ export default async function PesertaPage({
                         <StatusBadge status={p.status} />
                       </Td>
                       <Td>
-                        <Link href={`/portal/peserta/${p.id}`} className="font-semibold text-(--color-court-600) hover:underline">
+                        <Link href={`/portal/peserta/${p.id}`} className="font-semibold text-(--color-court-500) hover:underline">
                           Detail
                         </Link>
                       </Td>

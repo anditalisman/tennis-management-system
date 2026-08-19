@@ -73,7 +73,7 @@ export default async function LapanganListPage({ searchParams }: { searchParams:
                       {staff && (
                         <Td>
                           <div className="flex items-center gap-3">
-                            <Link href={`/portal/lapangan/${c.id}/edit`} className="font-semibold text-(--color-court-600) hover:underline">
+                            <Link href={`/portal/lapangan/${c.id}/edit`} className="font-semibold text-(--color-court-500) hover:underline">
                               Edit
                             </Link>
                             <form action={deleteCourtAction.bind(null, c.id)}>

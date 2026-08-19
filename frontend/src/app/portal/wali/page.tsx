@@ -80,7 +80,7 @@ export default async function WaliPage({
                       <Td>{g.relation ?? "-"}</Td>
                       <Td>{g.participant_count}</Td>
                       <Td>
-                        <Link href={`/portal/wali/${g.id}`} className="font-semibold text-(--color-court-600) hover:underline">
+                        <Link href={`/portal/wali/${g.id}`} className="font-semibold text-(--color-court-500) hover:underline">
                           Lihat Anak
                         </Link>
                       </Td>

@@ -24,8 +24,16 @@ export default async function DashboardPage() {
 
   return (
     <div className="max-w-5xl">
-      <h1 className="font-display text-2xl font-bold text-(--color-ink-900)">Selamat datang, {session.user.name.split(" ")[0]}</h1>
-      <p className="mt-1 text-sm text-(--color-ink-500)">Ringkasan operasional Zul Tennis Clinic.</p>
+      <div className="relative overflow-hidden rounded-2xl bg-(--color-court-700) px-6 py-8 sm:px-8">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(201,223,60,0.22),transparent_55%)]" />
+        <div className="relative">
+          <p className="text-xs font-bold uppercase tracking-widest text-(--color-ball-400)">Dashboard</p>
+          <h1 className="mt-2 font-display text-2xl font-extrabold text-white sm:text-3xl">
+            Selamat datang, {session.user.name.split(" ")[0]}
+          </h1>
+          <p className="mt-1.5 text-sm text-white/70">Ringkasan operasional Zul Tennis Clinic.</p>
+        </div>
+      </div>
 
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {dashboard.scope === "staff" && (

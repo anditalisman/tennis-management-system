@@ -57,7 +57,7 @@ export default async function InventoryDetailPage({
 
   return (
     <div className="max-w-3xl">
-      <Link href="/portal/inventaris" className="text-sm font-semibold text-(--color-court-600) hover:underline">
+      <Link href="/portal/inventaris" className="text-sm font-semibold text-(--color-court-500) hover:underline">
         ← Kembali ke daftar inventaris
       </Link>
 
@@ -77,7 +77,7 @@ export default async function InventoryDetailPage({
         <div className="flex items-center gap-3">
           <Badge tone={item.condition === "damaged" ? "crit" : "good"}>{item.condition === "damaged" ? "Rusak" : "Baik"}</Badge>
           {staff && (
-            <Link href={`/portal/inventaris/${id}/edit`} className="text-sm font-semibold text-(--color-court-600) hover:underline">
+            <Link href={`/portal/inventaris/${id}/edit`} className="text-sm font-semibold text-(--color-court-500) hover:underline">
               Edit
             </Link>
           )}
